@@ -20,6 +20,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 import cave
+import imgutil
 
 FONT = "C:/Windows/Fonts/consola.ttf"
 
@@ -115,7 +116,8 @@ def main():
     ap.add_argument("--seconds", type=float, default=225.0)
     ap.add_argument("--panel", default="240x135")
     ap.add_argument("--zoom", type=int, default=2)
-    ap.add_argument("--out", type=Path, default=here.parent / "preview")
+    ap.add_argument("--out", type=Path,
+                    default=here.parent / "docs" / "images")
     args = ap.parse_args()
 
     try:
@@ -127,8 +129,8 @@ def main():
 
     sheet = build(args.seed, args.fps, args.seconds, args.zoom)
     dest = args.out / "stages_reference.png"
-    sheet.save(dest)
-    print(f"wrote {dest}  ({sheet.width}x{sheet.height})")
+    kb = imgutil.save_compact(sheet, dest) // 1024
+    print(f"wrote {dest}  ({sheet.width}x{sheet.height}, {kb} KB)")
 
 
 if __name__ == "__main__":

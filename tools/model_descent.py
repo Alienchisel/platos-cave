@@ -24,6 +24,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 import cave
+import imgutil
 
 FONT = "C:/Windows/Fonts/consola.ttf"
 
@@ -129,7 +130,8 @@ def main():
     ap.add_argument("--fps", type=int, default=20)
     ap.add_argument("--seconds", type=float, default=420.0)
     ap.add_argument("--panel", default="240x135")
-    ap.add_argument("--out", type=Path, default=here.parent / "preview")
+    ap.add_argument("--out", type=Path,
+                    default=here.parent / "docs" / "images")
     args = ap.parse_args()
 
     pw, ph = (int(v) for v in args.panel.lower().split("x"))
@@ -161,11 +163,12 @@ def main():
     print(f"ascent was {log[n_asc-2][1]:.0f}s; the return adds "
           f"{total - log[n_asc-2][1]:.0f}s")
 
-    curve_sheet().save(args.out / "descent_curves.png")
+    imgutil.save_compact(curve_sheet(), args.out / "descent_curves.png")
     sheet, _ = region_sheet(args.seed, args.fps, args.seconds)
-    sheet.save(args.out / "descent_regions.png")
-    print(f"\nwrote {args.out / 'descent_curves.png'}")
-    print(f"wrote {args.out / 'descent_regions.png'}")
+    imgutil.save_compact(sheet, args.out / "descent_regions.png")
+    print()
+    for n in ("descent_curves.png", "descent_regions.png"):
+        print("wrote " + imgutil.report(args.out / n))
 
 
 if __name__ == "__main__":

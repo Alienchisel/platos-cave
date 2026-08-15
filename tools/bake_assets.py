@@ -48,9 +48,14 @@ LABELS = [
     ("ASTRA",         "ΑΣΤΡΑ"),        # stage 5 -- the stars
     ("SELENE",        "ΣΕΛΗΝΗ"),       # stage 6 -- the moon
     ("HELIOS",        "ΗΛΙΟΣ"),        # stage 7 -- the sun
-    ("HOI_LYTHENTES", "ΟΙ ΛΥΘΕΝΤΕΣ"),  # high-score header
+    ("HOI_LYTHENTES", "ΟΙ ΛΥΘΕΝΤΕΣ"),  # high-score header, "those who were released"
     ("DESMOTES",      "ΔΕΣΜΩΤΗΣ"),     # game over -- "prisoner"
+    ("LELYTAI",       "ΛΕΛΥΤΑΙ"),      # score table: a completed run, "has been freed"
+    ("KATEBEN",       "ΚΑΤΕΒΗΝ"),      # victory -- the Republic's first word, "I went down"
 ]
+
+# Only Greek needs baking. LovyanGFX ships Latin fonts, so the English on these
+# screens costs nothing.
 
 # Uppercase Greek, for arcade initials entry. Final sigma is omitted: it never
 # begins a word and would only be a confusing extra step on the dial.

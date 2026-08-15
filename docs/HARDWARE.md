@@ -115,7 +115,7 @@ Recorded so these aren't re-argued later.
 
 | Device | Why not |
 | --- | --- |
-| **LILYGO T-QT Pro** | The original target. 0.85" 128 × 128 GC9107, and all early art was built for it. Rejected once it emerged that it has **no battery socket** — only solder pads — and that its case (21 × 36 × 12.5 mm) physically cannot contain a battery: 2 mm of internal clearance against a 5 mm cell. Also 2 buttons and **no sound**, which a codec/game device wants. Still the smallest and cheapest option if soldering and silence are acceptable. |
+| **LILYGO T-QT Pro** | The original target. 0.85" 128 × 128 GC9107, and all early art was built for it. Rejected once it emerged that it has **no battery socket** — only solder pads — and that its case (21 × 36 × 12.5 mm) physically cannot contain a battery: 2 mm of internal clearance against a 5 mm cell. Also 2 buttons and **no sound**. Still the smallest and cheapest option if soldering and silence are acceptable. |
 | **M5Stack AtomS3 + Atomic Battery Base** | Identical 0.85" 128 × 128 GC9107 panel, so **zero art rework**, and the battery base clips on with no soldering. Rejected because its one programmable button *is the screen* — playing means covering the display. |
 | **M5StickC PLUS2** | Was the front-runner. **End of life**; M5Stack's own successor is the StickS3. Its piezo buzzer is also inferior to the StickS3's real speaker. |
 | **Pimoroni PicoSystem** | The best pure handheld — 240 × 240, d-pad, four buttons, internal LiPo, aluminium case. Rejected as the largest departure: RP2040, different toolchain, no WiFi, and a third aspect ratio to redesign for. Reconsider only if the games become the whole point. |

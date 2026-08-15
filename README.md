@@ -19,6 +19,21 @@ with the view closing in. Roughly 5½ minutes of unbroken flight.
 
 ---
 
+## Screens
+
+| | |
+| --- | --- |
+| ![title](docs/images/screen_title.png) | ![scores](docs/images/screen_scores.png) |
+| ![game over](docs/images/screen_gameover.png) | ![victory](docs/images/screen_victory.png) |
+
+All four at true 240 × 135. The victory screen reads **ΚΑΤΕΒΗΝ** — *I went down* —
+which is the first word of the *Republic* and, after the return, exactly what you
+have just done.
+
+See also [the seven regions](docs/images/stages_reference.png),
+[ascent versus return](docs/images/descent_regions.png), and
+[the difficulty levers](docs/images/descent_curves.png).
+
 ## Status
 
 **Nothing has been built.** No firmware is written and the hardware has not been
@@ -64,7 +79,8 @@ firmware.
 | `tools/preview.py` | 3D point-cloud renderer. Archived direction. |
 | `tools/sample_points.py` | Mesh → point cloud → C header. Archived direction. |
 | `tools/isolate_head.py` | Cuts a subject off a photographed background onto black, by largest connected component. Works when the subject is clearly brighter than the background; not when their tonal ranges overlap. |
-| `tools/codec.py` | Metal Gear codec mockup. Explored and set aside. |
+| `tools/mockups.py` | The non-gameplay screens — title, high scores, game over, victory — at true 240×135. |
+| `tools/imgutil.py` | Palette-PNG saving for the committed reference images. |
 
 ### Running it
 
