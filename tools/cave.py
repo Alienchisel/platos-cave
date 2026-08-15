@@ -48,7 +48,10 @@ def configure(w: int, h: int) -> None:
     TILE = np.tile(BAYER, (h // 8 + 1, w // 8 + 1))[:h, :w]
 
 
-configure(128, 128)
+# Default to the target panel, not the 128x128 square of the abandoned board.
+# Anything importing this module without calling configure() gets the real
+# geometry rather than silently laying out for hardware we are not using.
+configure(240, 135)
 
 # The rock is always near-black and the passage is what fills with light, so the
 # screen goes from near-dark to blazing across a run. The floor of 0.14 exists
