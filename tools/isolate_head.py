@@ -2,7 +2,7 @@
 """
 Cut the head out of a museum photograph and put it on black.
 
-    python isolate_head.py image/plato_commons_pd.jpg -o image/plato_pd_head.png
+    python isolate_head.py image/source.jpg -o image/source_on_black.png
 
 The treatment pipeline assumes a subject on pure black -- that is what makes the
 dithers and duotones read. A gallery photograph has a wall behind it, and here
