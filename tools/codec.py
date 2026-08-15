@@ -178,6 +178,9 @@ def main() -> None:
     ap.add_argument("--scale", type=int, default=3)
     ap.add_argument("--out", type=Path, default=here.parent / "preview")
     args = ap.parse_args()
+    # Before rendering, not after: a missing directory would otherwise discard
+    # the whole run at the final write.
+    args.out.mkdir(parents=True, exist_ok=True)
 
     if args.rotate:
         data = preview.load_header(args.header)
@@ -195,9 +198,12 @@ def main() -> None:
     gif = args.out / "codec.gif"
     big[0].save(gif, save_all=True, append_images=big[1:], duration=60, loop=0)
 
+    # Index off len(frames) and clamp: at n=7 the unclamped expression rounds up
+    # to len(frames) whenever fewer than 8 frames were rendered.
     sheet = Image.new("RGB", (N * 2 * 4, N * 2 * 2))
     for n in range(8):
-        f = frames[round(n * args.frames / 8)].resize((N * 2, N * 2), Image.NEAREST)
+        i = min(len(frames) - 1, round(n * len(frames) / 8))
+        f = frames[i].resize((N * 2, N * 2), Image.NEAREST)
         sheet.paste(f, ((n % 4) * N * 2, (n // 4) * N * 2))
     png = args.out / "codec_sheet.png"
     sheet.save(png)
