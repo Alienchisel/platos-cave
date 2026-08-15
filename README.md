@@ -1,0 +1,118 @@
+# Plato's Cave
+
+A one-button cave-flyer for a pocket ESP32 handheld. You are a point of light
+ascending out of Plato's cave; gravity pulls you down, the button thrusts you
+up, rock kills you, distance is score.
+
+The allegory isn't decoration. Plato's ascent in *Republic* 514a–517a is an
+ordered sequence of light sources — shadows, fire, carried images, reflections in
+water, stars, moon, sun — and that sequence supplies the game's entire
+progression structure *and* its palette. **The screen brightens as you climb.**
+Your progress isn't a number in the corner; it's how much you can see.
+
+![the seven stages](preview/stage_palette.png)
+
+---
+
+## Status
+
+**Nothing has been built.** No firmware is written and the hardware has not been
+bought. Everything so far is prototyped in Python at exact panel resolution, so
+the visuals are settled and the feel is entirely unknown.
+
+| | |
+| --- | --- |
+| Target | M5Stack **M5StickS3**, 240 × 135 landscape — *not yet purchased* |
+| Visuals | prototyped and rendered |
+| Pacing | retuned, frame-rate independent, verified 30–144 fps |
+| Physics feel | **never tested** — three constants awaiting a thumb |
+| Firmware | not started |
+
+---
+
+## Documentation
+
+| Doc | Contents |
+| --- | --- |
+| [docs/HARDWARE.md](docs/HARDWARE.md) | What to buy and why. Confirmed specs, unverified items, and a record of the four devices considered and rejected. |
+| [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) | Rules, the seven stages, palette, pacing curve, open decisions. |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Launcher-plus-modules structure, the input abstraction, build order. |
+| [docs/ARCHIVE_POINTCLOUD.md](docs/ARCHIVE_POINTCLOUD.md) | The abandoned first direction, kept for its findings. |
+
+**Read HARDWARE.md first if you're picking this up cold** — one open question
+there (how many programmable buttons the StickS3 actually has) cascades into the
+input design and the high-score entry screen.
+
+---
+
+## Tools
+
+All prototypes. Only the asset bakers — *not yet written* — will feed the
+firmware.
+
+| | |
+| --- | --- |
+| `tools/cave.py` | The game. Simulates a run and renders it. **The reference implementation**: the C++ must match its math. |
+| `tools/image_treatments.py` | Renders a source image twelve ways at panel resolution — dithers, halftone, engraving, duotones. |
+| `tools/preview.py` | 3D point-cloud renderer. Archived direction. |
+| `tools/sample_points.py` | Mesh → point cloud → C header. Archived direction. |
+| `tools/codec.py` | Metal Gear codec mockup. Explored and set aside. |
+
+### Running it
+
+```bash
+python tools/cave.py --seconds 225 --fps 24 --scale 2
+```
+
+Writes a gameplay GIF, a title screen, and a one-frame-per-stage contact sheet to
+`preview/`, and prints the stage timings.
+
+```bash
+python tools/image_treatments.py image/plato.png
+```
+
+Twelve treatments at 128 × 128 to `preview/treatments/`.
+
+Requires `numpy`, `pillow`, and — for the archived 3D tools — `trimesh`,
+`scipy`, `networkx`.
+
+---
+
+## How this got here
+
+Worth recording, because the path explains the leftovers.
+
+It began as a **rotating 3D Plato bust** for a LILYGO T-QT Pro, drawn as a point
+cloud because marble shading collapses at 128 × 128. That worked — see
+[the archive](docs/ARCHIVE_POINTCLOUD.md) — and produced some genuinely useful
+findings about blue-noise sampling and dot coverage.
+
+It then became a **Metal Gear codec display**, which was fun and is where the
+Greek UI came from, before the rotating head was dropped in favour of treating a
+still photograph.
+
+It is now a **game**, which is the first version that gives the device a reason
+to be picked up rather than glanced at.
+
+The target board changed too, once it emerged that the T-QT Pro has no battery
+socket, a case that physically cannot contain a battery, and no speaker.
+
+---
+
+## Attribution and licensing
+
+- **3D scan** (`mesh/plato.glb`): *Plato*, Fitzwilliam Museum, object
+  GR.23.1850, via [Sketchfab](https://sketchfab.com/3d-models/plato-1df8376b55e347fb9bb4cf49375d6e5a).
+  Licensed **CC BY 4.0** — attribution required, and this line provides it.
+- ⚠ **`image/plato.png` has unknown provenance.** It supplies the title-screen
+  bust and drove all twelve treatments. Its licence was never established. If
+  this project is ever published or distributed, **that needs resolving first** —
+  the Fitzwilliam scan is a known-clean substitute for the same subject.
+
+---
+
+## Repository note
+
+The directory is still named `plato-tqt`, after a board no longer being used.
+`firmware/plato_tqt/` likewise holds the archived T-QT sketch, which was never
+compiled. Renaming is deferred rather than forgotten.

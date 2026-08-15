@@ -1,0 +1,13 @@
+# Normalise line endings in the repo to LF, regardless of the checkout platform.
+# Without this, working from Windows commits CRLF and every later diff from a
+# non-Windows machine shows whole files as changed.
+* text=auto eol=lf
+
+# Generated C headers are text, but very long single-purpose lines -- keep them
+# out of diff noise when the bakers are re-run.
+firmware/**/assets/*.h linguist-generated=true
+
+*.png binary
+*.gif binary
+*.glb binary
+*.stl binary

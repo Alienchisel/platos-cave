@@ -1,0 +1,30 @@
+# Generated previews. All reproducible from tools/ -- ~11 MB of GIFs and contact
+# sheets that would bloat history for no benefit, since every one of them is a
+# build artefact of a script that is committed.
+preview/
+
+# Downloaded 3D scan (~13 MB). Free but login-walled, so it cannot be fetched
+# automatically anyway. CC BY 4.0, Fitzwilliam Museum GR.23.1850 -- see README.
+mesh/
+
+# Source photograph, and the stand-in render derived from it.
+# NOT COMMITTED BECAUSE ITS LICENCE WAS NEVER ESTABLISHED. See README.
+# The firmware's baked title bust is derived from this file; if this project is
+# ever made public, resolve the provenance or regenerate the bust from the
+# Fitzwilliam scan, which is known-clean.
+image/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+
+# PlatformIO
+.pio/
+.pioenvs/
