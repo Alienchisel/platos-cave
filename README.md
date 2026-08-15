@@ -111,8 +111,18 @@ socket, a case that physically cannot contain a battery, and no speaker.
 
 ---
 
-## Repository note
+## Repository
 
-The directory is still named `plato-tqt`, after a board no longer being used.
-`firmware/plato_tqt/` likewise holds the archived T-QT sketch, which was never
-compiled. Renaming is deferred rather than forgotten.
+<https://github.com/Alienchisel/platos-cave> — **private**.
+
+⚠ **Do not make this public** until the title bust's provenance is resolved.
+`firmware/plato/assets/bust.h` is a derivative of `image/plato.png`, whose
+licence was never established — the image itself is gitignored, but the baked
+bitmap is committed. Regenerating the bust from the Fitzwilliam scan (CC BY 4.0,
+already attributed above) would make the repository distributable.
+
+`image/`, `mesh/` and `preview/` are excluded: ~26 MB of downloaded assets and
+regenerable output, against ~450 KB of actual source.
+
+`firmware/plato_tqt/` keeps its name because it holds the archived T-QT sketch,
+named for the board it targeted. It was never compiled.
