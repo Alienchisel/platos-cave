@@ -40,6 +40,35 @@ def unpack(data: bytes, w: int, h: int) -> np.ndarray:
     return out
 
 
+def check_constants(path: Path) -> int:
+    """Structural check on the generated region table.
+
+    There is no C compiler here, so nothing catches malformed output. A missing
+    separator between the label and the next field once produced
+    "{LBL_SKIAI      0, 36, ...}" -- which reads fine to a human skimming it and
+    is a syntax error. Count the fields instead of trusting the eye.
+    """
+    text = path.read_text(encoding="utf-8")
+    body = re.search(r"REGIONS\[REGION_COUNT\]\s*=\s*\{(.*?)\n\};", text, re.S)
+    if not body:
+        raise SystemExit("REGIONS table not found in constants.h")
+
+    declared = int(re.search(r"REGION_COUNT\s*=\s*(\d+)", text).group(1))
+    rows = re.findall(r"\{([^{}]*)\}", body.group(1))
+    bad = 0
+    for n, row in enumerate(rows):
+        fields = [f.strip() for f in row.split(",") if f.strip()]
+        if len(fields) != 5:
+            print(f"  row {n}: {len(fields)} fields, expected 5 -> {row.strip()}")
+            bad += 1
+    if len(rows) != declared:
+        print(f"  REGION_COUNT says {declared}, table has {len(rows)} rows")
+        bad += 1
+    print(f"constants.h: {len(rows)} regions, "
+          f"{'OK' if not bad else f'{bad} MALFORMED'}")
+    return bad
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--image", type=Path,
@@ -97,9 +126,11 @@ def main() -> None:
         print(f"  {text:<14} {m.shape[1]:>3} x {m.shape[0]}")
     sheet.save(args.out / "verify_labels.png")
 
+    bad = check_constants(args.assets / "constants.h")
+
     print(f"\nwrote {args.out / 'verify_bust.png'}")
     print(f"wrote {args.out / 'verify_labels.png'}")
-    if diff:
+    if diff or bad:
         raise SystemExit(1)
 
 

@@ -135,12 +135,18 @@ not a build dependency — only the bakers feed the firmware.
 | Tool | Output | Notes |
 | --- | --- | --- |
 | `bake_assets.py` | `assets/bust.h`, `assets/labels.h` | written |
-| `bake_constants.py` | `assets/constants.h` | written |
-| `verify_bake.py` | round-trip check | written — bust verified at 0 differing pixels |
+| `bake_constants.py` | `assets/constants.h` | written — emits all 13 regions |
+| `verify_bake.py` | round-trip + structural check | written — bust at 0 differing pixels, region table field-counted |
+| `model_descent.py` | descent curves and region sheets | written |
 | `cave.py` | design reference | already exists |
 
 Total baked data is ~2.7 KB: bust 1 770 B, nine labels ~300 B, 24-glyph Greek
 alphabet 672 B.
+
+**There is no C compiler in this environment**, so nothing catches malformed
+generated output. `verify_bake.py` therefore field-counts the region table: a
+missing separator once emitted `{LBL_SKIAI      0, 36, ...}`, which reads fine to
+a human skimming it and is a syntax error. Check structure, don't trust the eye.
 
 Two things must be baked rather than computed on device:
 
@@ -167,16 +173,23 @@ that was never baked — it fails loudly instead of emitting a dangling index.
 ## 10. Console state machine
 
 ```
-BOOT ──► TITLE ──confirm──► [MENU]* ──► PLAY ──finished──► GAMEOVER
-  ▲                                                            │
-  │                                                    qualifying?
-  │                                                       │       │
-  └────────── SCORES ◄──── INITIALS ◄────yes──────────────┘       │
-                 ▲                                                │
-                 └────────────────────no──────────────────────────┘
+BOOT ──► TITLE ──confirm──► [MENU]* ──► PLAY ──┬─died──► GAMEOVER ─┐
+  ▲                                            │                   │
+  │                                            └─won───► VICTORY ──┤
+  │                                                                │
+  │                                                        qualifying?
+  │                                                          │      │
+  └────────── SCORES ◄──── INITIALS ◄─────────yes────────────┘      │
+                 ▲                                                  │
+                 └──────────────────────no─────────────────────────┘
 
 * MENU skipped while only one game is registered.
 ```
+
+`Game::finished()` alone is not enough once the game is winnable — the console
+has to know *how* it ended. Either add `Game::outcome()` returning
+died/won, or let `rank()` carry it. The former is cleaner; VICTORY and GAMEOVER
+are different screens and a win should always qualify for the table.
 
 Idle in TITLE or SCORES past a timeout → **deep sleep**, waking on the button.
 For a handheld this matters more than battery capacity: microamps asleep means

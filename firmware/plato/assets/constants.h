@@ -16,6 +16,25 @@ constexpr float GAP_START      = 0.480f;  // fraction of panel height
 constexpr float GAP_MIN        = 0.210f;
 constexpr float GAP_RAMP_END   = 12000.0f;
 
+// ---- the return -------------------------------------------------
+// Republic ~516e-517a. Both ascent levers are spent by the sun --
+// the gap floors at GAP_RAMP_END, the speed caps at SPEED_RAMP_END --
+// so the descent uncaps them rather than repeating the climb.
+constexpr float SUN_HOLD       = 3000.0f;   // distance held at the sun before turning back
+constexpr float DESCENT_START  = 19000.0f;
+constexpr float SPEED_DESC_END = 145.0f;  // columns/second at the chains
+constexpr float GAP_DESC_MIN   = 0.150f;  // fraction of H
+constexpr float WIN_DIST       = 33000.0f;   // reaching this completes the game
+
+// The closing view: the returning eye cannot see far. Applied AFTER
+// the rock edge is drawn, so the edge is occluded too -- otherwise
+// the passage ahead stays readable and the mechanic does nothing.
+// TUNING RISK: at VIEW_CLOSE 0.55 the clear view at the chains is
+// ~0.60s against 3.62s at the start. 0.40 gives ~0.82s. Unresolved
+// until played.
+constexpr float VIEW_CLOSE = 0.55f;   // fraction of width swallowed
+constexpr float VIEW_DEPTH = 0.92f;   // dimming at the right edge
+
 // ---- physics ----------------------------------------------------
 // Scaled by panel height H. THRUST replaces gravity while the
 // button is held; it does not add to it.
@@ -31,26 +50,35 @@ constexpr float DRIFT_DAMP   = 0.94f;
 constexpr float WALL_MARGIN  = 0.06f;   // * H, beyond gap/2
 constexpr float PLAYER_X_FRAC = 0.17f;  // * W
 
-// ---- stages -----------------------------------------------------
-// Republic 514a-517a, in order. Each stage names its own light
-// source, which is where its colour comes from.
-struct Stage {
+// ---- regions ----------------------------------------------------
+// Republic 514a-517a ascending, then the return. Each region names
+// its own light source, which is where its colour comes from. The
+// return reuses the ascent's names and colours at lower light: the
+// prisoner coming back from the sun cannot see in the dark.
+struct Region {
   uint8_t  label;    // index into LABELS[] in labels.h
-  uint32_t from;     // distance at which this stage begins
+  uint32_t from;     // distance at which this region begins
   uint8_t  light;    // dither density, 0-255
   uint16_t rock;     // RGB565
   uint16_t glow;     // RGB565
 };
 
-constexpr uint8_t STAGE_COUNT = 7;
-inline constexpr Stage STAGES[STAGE_COUNT] = {
-  {LBL_SKIAI               0,  36, 0x0021, 0x4ACD},  // ΣΚΙΑΙ
-  {LBL_PYR               700,  61, 0x0820, 0xEBA4},  // ΠΥΡ
-  {LBL_EIDOLA           1800,  92, 0x1040, 0xFDA9},  // ΕΙΔΩΛΑ
-  {LBL_HYDOR            3400, 128, 0x0062, 0x563B},  // ΥΔΩΡ
-  {LBL_ASTRA            6000, 163, 0x0022, 0x9CBE},  // ΑΣΤΡΑ
-  {LBL_SELENE           9900, 204, 0x0862, 0xCF1F},  // ΣΕΛΗΝΗ
-  {LBL_HELIOS          16000, 255, 0x1060, 0xFFBA},  // ΗΛΙΟΣ
+constexpr uint8_t REGION_COUNT = 13;
+constexpr uint8_t ASCENT_COUNT = 7;   // regions at and past this index are the return
+inline constexpr Region REGIONS[REGION_COUNT] = {
+  {LBL_SKIAI,               0,  36, 0x0021, 0x4ACD},  //  0 ΣΚΙΑΙ    ascent
+  {LBL_PYR,               700,  61, 0x0820, 0xEBA4},  //  1 ΠΥΡ      ascent
+  {LBL_EIDOLA,           1800,  92, 0x1040, 0xFDA9},  //  2 ΕΙΔΩΛΑ   ascent
+  {LBL_HYDOR,            3400, 128, 0x0062, 0x563B},  //  3 ΥΔΩΡ     ascent
+  {LBL_ASTRA,            6000, 163, 0x0022, 0x9CBE},  //  4 ΑΣΤΡΑ    ascent
+  {LBL_SELENE,           9900, 204, 0x0862, 0xCF1F},  //  5 ΣΕΛΗΝΗ   ascent
+  {LBL_HELIOS,          16000, 255, 0x1060, 0xFFBA},  //  6 ΗΛΙΟΣ    ascent
+  {LBL_SELENE,          19000, 147, 0x0862, 0xCF1F},  //  7 ΣΕΛΗΝΗ   return
+  {LBL_ASTRA,           22200, 108, 0x0022, 0x9CBE},  //  8 ΑΣΤΡΑ    return
+  {LBL_HYDOR,           25000,  76, 0x0062, 0x563B},  //  9 ΥΔΩΡ     return
+  {LBL_EIDOLA,          27400,  50, 0x1040, 0xFDA9},  // 10 ΕΙΔΩΛΑ   return
+  {LBL_PYR,             29500,  29, 0x0820, 0xEBA4},  // 11 ΠΥΡ      return
+  {LBL_SKIAI,           31300,  15, 0x0021, 0x4ACD},  // 12 ΣΚΙΑΙ    return
 };
 
 // ---- dither -----------------------------------------------------

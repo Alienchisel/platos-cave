@@ -10,6 +10,11 @@ water, stars, moon, sun — and that sequence supplies the game's entire
 progression structure *and* its palette. **The screen brightens as you climb.**
 Your progress isn't a number in the corner; it's how much you can see.
 
+And reaching the sun isn't the end. Plato's freed prisoner is obliged to go back
+down, and his eyes no longer work in the dark. **You win by returning to the
+chains** — through the same seven regions, each dimmer than it was on the way up,
+with the view closing in. Roughly 5½ minutes of unbroken flight.
+
 ![the seven stages](preview/stage_palette.png)
 
 ---
@@ -53,7 +58,8 @@ firmware.
 | | |
 | --- | --- |
 | `tools/cave.py` | The game. Simulates a run and renders it. **The reference implementation**: the C++ must match its math. |
-| `tools/stage_sheet.py` | Reference sheet of all seven regions with palettes, hex values and per-stage difficulty numbers. |
+| `tools/stage_sheet.py` | Reference sheet of the seven ascent regions with palettes, hex values and per-stage difficulty numbers. |
+| `tools/model_descent.py` | The full run including the return: difficulty curves across all three levers, and every region shown ascending and returning. |
 | `tools/image_treatments.py` | Renders a source image twelve ways at panel resolution — dithers, halftone, engraving, duotones. |
 | `tools/preview.py` | 3D point-cloud renderer. Archived direction. |
 | `tools/sample_points.py` | Mesh → point cloud → C header. Archived direction. |

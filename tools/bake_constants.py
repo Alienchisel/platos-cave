@@ -57,6 +57,31 @@ def emit() -> str:
     p.append(f"constexpr float GAP_MIN        = {cave.GAP_MIN:.3f}f;\n")
     p.append(f"constexpr float GAP_RAMP_END   = {cave.GAP_RAMP_END}.0f;\n\n")
 
+    p.append("// ---- the return -------------------------------------------------\n"
+             "// Republic ~516e-517a. Both ascent levers are spent by the sun --\n"
+             "// the gap floors at GAP_RAMP_END, the speed caps at SPEED_RAMP_END --\n"
+             "// so the descent uncaps them rather than repeating the climb.\n")
+    p.append(f"constexpr float SUN_HOLD       = {cave.SUN_HOLD}.0f;"
+             "   // distance held at the sun before turning back\n")
+    p.append(f"constexpr float DESCENT_START  = {cave.DESCENT_START}.0f;\n")
+    p.append(f"constexpr float SPEED_DESC_END = {cave.SPEED_DESC_END:.1f}f;"
+             "  // columns/second at the chains\n")
+    p.append(f"constexpr float GAP_DESC_MIN   = {cave.GAP_DESC_MIN:.3f}f;"
+             "  // fraction of H\n")
+    p.append(f"constexpr float WIN_DIST       = {cave.WIN_DIST}.0f;"
+             "   // reaching this completes the game\n\n")
+
+    p.append("// The closing view: the returning eye cannot see far. Applied AFTER\n"
+             "// the rock edge is drawn, so the edge is occluded too -- otherwise\n"
+             "// the passage ahead stays readable and the mechanic does nothing.\n"
+             "// TUNING RISK: at VIEW_CLOSE 0.55 the clear view at the chains is\n"
+             "// ~0.60s against 3.62s at the start. 0.40 gives ~0.82s. Unresolved\n"
+             "// until played.\n")
+    p.append(f"constexpr float VIEW_CLOSE = {cave.VIEW_CLOSE:.2f}f;"
+             "   // fraction of width swallowed\n")
+    p.append(f"constexpr float VIEW_DEPTH = {cave.VIEW_DEPTH:.2f}f;"
+             "   // dimming at the right edge\n\n")
+
     p.append("// ---- physics ----------------------------------------------------\n"
              "// Scaled by panel height H. THRUST replaces gravity while the\n"
              "// button is held; it does not add to it.\n"
@@ -72,23 +97,31 @@ def emit() -> str:
              "constexpr float WALL_MARGIN  = 0.06f;   // * H, beyond gap/2\n"
              "constexpr float PLAYER_X_FRAC = 0.17f;  // * W\n\n")
 
-    p.append("// ---- stages -----------------------------------------------------\n"
-             "// Republic 514a-517a, in order. Each stage names its own light\n"
-             "// source, which is where its colour comes from.\n"
-             "struct Stage {\n"
+    p.append("// ---- regions ----------------------------------------------------\n"
+             "// Republic 514a-517a ascending, then the return. Each region names\n"
+             "// its own light source, which is where its colour comes from. The\n"
+             "// return reuses the ascent's names and colours at lower light: the\n"
+             "// prisoner coming back from the sun cannot see in the dark.\n"
+             "struct Region {\n"
              "  uint8_t  label;    // index into LABELS[] in labels.h\n"
-             "  uint32_t from;     // distance at which this stage begins\n"
+             "  uint32_t from;     // distance at which this region begins\n"
              "  uint8_t  light;    // dither density, 0-255\n"
              "  uint16_t rock;     // RGB565\n"
              "  uint16_t glow;     // RGB565\n"
              "};\n\n")
-    p.append(f"constexpr uint8_t STAGE_COUNT = {len(cave.STAGES)};\n")
-    p.append("inline constexpr Stage STAGES[STAGE_COUNT] = {\n")
-    for name, start, light, rock, glow in cave.STAGES:
-        p.append(f"  {{LBL_{LABELS[label_index(name)][0]:<14}"
-                 f" {start:>6}, {round(light * 255):>3},"
-                 f" 0x{rgb565(rock):04X}, 0x{rgb565(glow):04X}}},"
-                 f"  // {name}\n")
+    p.append(f"constexpr uint8_t REGION_COUNT = {len(cave.REGIONS)};\n")
+    p.append(f"constexpr uint8_t ASCENT_COUNT = {len(cave.STAGES)};"
+             "   // regions at and past this index are the return\n")
+    p.append("inline constexpr Region REGIONS[REGION_COUNT] = {\n")
+    for i, (name, start, light, rock, glow) in enumerate(cave.REGIONS):
+        phase = "ascent" if i < len(cave.STAGES) else "return"
+        # The comma belongs to the label, not to the padding. Formatting the
+        # name to a fixed width and then adding a space emitted
+        # "{LBL_SKIAI      0, ...}" -- a missing separator, and invalid C.
+        lbl = f"LBL_{LABELS[label_index(name)][0]},"
+        p.append(f"  {{{lbl:<20}{start:>6}, {round(light * 255):>3}, "
+                 f"0x{rgb565(rock):04X}, 0x{rgb565(glow):04X}}},"
+                 f"  // {i:>2} {name:<8} {phase}\n")
     p.append("};\n\n")
 
     p.append("// ---- dither -----------------------------------------------------\n"
@@ -111,10 +144,14 @@ def main() -> None:
     text = emit()
     (args.out / "constants.h").write_text(text, encoding="utf-8")
 
-    print(f"{len(cave.STAGES)} stages, "
-          f"sun at distance {cave.STAGES[-1][1]}")
-    for name, start, *_ in cave.STAGES:
-        print(f"  {name:<8} from {start:>6}")
+    print(f"{len(cave.REGIONS)} regions "
+          f"({len(cave.STAGES)} ascending, "
+          f"{len(cave.REGIONS) - len(cave.STAGES)} returning), "
+          f"win at {cave.WIN_DIST}")
+    for i, (name, start, light, *_) in enumerate(cave.REGIONS):
+        phase = "ascent" if i < len(cave.STAGES) else "return"
+        print(f"  {i:>2}  {name:<8} {phase}  from {start:>6}  "
+              f"light {round(light * 255):>3}/255")
     print(f"\nwrote {args.out}\\constants.h")
 
 
