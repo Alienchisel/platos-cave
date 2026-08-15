@@ -12,7 +12,11 @@ governing gravity, thrust and pacing is a guess awaiting a thumb.
 
 An SFCave-style one-button cave flyer. You are a point of light ascending out of
 Plato's cave. Gravity pulls you down; holding the button thrusts you up; touching
-rock ends the run. Distance is score.
+rock ends the run.
+
+**The game can be won**, and winning means going back down. Reaching the sun is
+the halfway point; the return to the chains is the second half and the harder
+one. See §3a.
 
 Tagline, shown on the title screen: **CAN YOU ESCAPE PLATO'S CAVE?**
 
@@ -53,9 +57,78 @@ source, which supplies its colour.
 | 6 | **ΣΕΛΗΝΗ** | the moon | pale silver-blue | 9 900 | 145.6 s | +50.5 |
 | 7 | **ΗΛΙΟΣ** | the sun | white-gold | 16 000 | 212.6 s | +66.9 |
 
-Each stage takes roughly 35% longer than the one before, so the sun is a
-3½-minute achievement rather than something you stumble into. Times assume
-uninterrupted flight; they are *frame-rate independent* (see §9).
+Each stage takes 32–50% longer than the one before, so the sun is a 3½-minute
+achievement rather than something you stumble into. Times assume uninterrupted
+flight; they are *frame-rate independent* (see §9).
+
+The sun is then **held for 3 000 distance (~30 s)** before the return begins —
+the one stretch of the game that is a reward rather than a test, though it is
+still at maximum speed and minimum gap.
+
+---
+
+## 3a. The return — how the game is won
+
+Reaching the sun is not the end. In *Republic* ~516e–517a the freed prisoner is
+obliged to go back down, and his eyes are now useless in the dark — he is worse
+at reading shadows than those who never left. **The game is won by getting back
+to the chains.**
+
+| # | Region | Reached | Interval | Light (vs ascent) | Gap | View |
+| --- | --- | --- | --- | --- | --- | --- |
+| 8 | **ΣΕΛΗΝΗ** | 4:02 | +30.0 s | 147 *(was 204)* | 28.3 | 1.99 s |
+| 9 | **ΑΣΤΡΑ** | 4:33 | +30.4 s | 108 *(was 163)* | 26.5 | 1.80 s |
+| 10 | **ΥΔΩΡ** | 4:57 | +24.4 s | 76 *(was 128)* | 24.9 | 1.67 s |
+| 11 | **ΕΙΔΩΛΑ** | 5:16 | +19.5 s | 50 *(was 92)* | 23.5 | 1.57 s |
+| 12 | **ΠΥΡ** | 5:33 | +16.1 s | 29 *(was 61)* | 22.3 | 1.49 s |
+| 13 | **ΣΚΙΑΙ** | 5:46 | +13.2 s | 15 *(was 36)* | 21.2 | 1.43 s |
+
+**Full run 5:46.** Ascent 3:32, sun 0:30, return 2:14.
+
+### Why the return needs its own mechanics
+
+Both ascent levers are **spent** by the time you reach the sun: the gap floors at
+distance 12 000 and the speed caps at 16 000. Replaying the ascent would be
+strictly *easier*, because by then you know it. So the descent uncaps them and
+adds two more.
+
+**1. Speed uncaps** — 100 → 145 columns/second. Speed is the primary descent
+lever because the gap has a hard floor near the player's own height (~7 px)
+while reaction time does not.
+
+**2. The dazzle** — every region is dimmer coming down than it was going up, per
+the table above. This is the text made mechanical, and it reuses the dither
+density that already carries the whole rendering. The final ΣΚΙΑΙ sits at
+**15/255** — about six percent of the passage lit.
+
+That stays playable only because **the 1 px rock edge draws regardless of dither
+density.** The edge carries legibility; the fill carries atmosphere. Remove the
+edge and near-total darkness becomes unfair rather than brutal.
+
+**3. The view closes in** — a darkness creeping from the right, eating forward
+view directly rather than by proxy. It is applied *after* the rock edge is drawn
+so the edge is occluded too; occlude only the fill and the passage ahead stays
+readable and the mechanic does nothing.
+
+**4. Intervals shrink** — 30, 30, 24, 20, 16, 13 s. The return is compressed as
+well as darker, so the collapse accelerates. Ascent: long, escalating,
+learnable. Return: compressed, dark, brutal.
+
+### Obstacles
+
+Free-floating blocks belong **to the return only**, if they are used at all. On
+the ascent they compete with the brightness arc for visual space; on the return
+they have a home. *This resolves the open question that stood in §10.*
+
+### ⚠ Tuning risk: the closing view may be unfair
+
+`VIEW_CLOSE = 0.55` swallows 52% of the screen by the chains, leaving **83
+columns = 0.60 s of clear warning**, against 3.62 s at the start. Simple visual
+reaction time is ~0.25 s, so that is roughly a third of a second to decide *and*
+execute.
+
+`VIEW_CLOSE = 0.40` gives 0.82 s. **Unresolved until it is played** — it is the
+first constant to revisit if the return proves unfair rather than merely hard.
 
 Two structural properties fall out of the text rather than being imposed:
 
@@ -231,19 +304,22 @@ original per-frame guesses and have still never been driven by a human thumb.
 
 ## 10. Open decisions
 
-1. **Death behaviour.** Pure restart is the SFCave contract, and "escape" wants
-   it — you are dragged back to the chains. Checkpointing at your best stage is
-   friendlier but softens the conceit. *Recommendation: pure restart.*
-2. **Obstacles.** SFCave adds free-floating blocks once you are deep. Worth
-   having, but they compete with the brightness arc for visual space.
-   *Recommendation: introduce from ΥΔΩΡ onward, or not at all.*
-3. **Death screen.** ΔΕΣΜΩΤΗΣ — *prisoner* — with distance and best. Blunt, but
+1. **Death behaviour.** Pure restart is the SFCave contract, and it bites harder
+   now there is 5:46 to lose. Checkpointing at the sun would be merciful and
+   would badly undercut the return. *Recommendation: pure restart.*
+2. **Death screen.** ΔΕΣΜΩΤΗΣ — *prisoner* — with distance and best. Blunt, but
    it lands.
+3. **Win screen.** Undesigned. Reaching the chains needs to read as victory
+   while the imagery is of returning to captivity, which is the whole joke.
 4. **Dither at ΗΛΙΟΣ** — see §4.
-5. **Initials entry scheme** — blocked on button count.
+5. **`VIEW_CLOSE`** — see §3a. The most likely constant to be wrong.
+6. **Initials entry scheme** — blocked on button count.
 
-*Resolved: stage pacing. The ascent now runs 212.6 s and is frame-rate
-independent; see §9. The three physics constants are still guesses.*
+*Resolved: **stage pacing** — the ascent runs 212.6 s, frame-rate independent
+(§9). **Win condition** — reaching the chains after the return (§3a).
+**Obstacles** — the return only, if at all (§3a).*
+
+*Still guesses: the three physics constants, and now `VIEW_CLOSE`.*
 
 ---
 
@@ -252,7 +328,9 @@ independent; see §9. The three physics constants are still guesses.*
 | | State |
 | --- | --- |
 | Cave generation, scrolling, collision bounds | prototyped, `tools/cave.py` |
-| Seven-stage progression and palette | prototyped |
+| Seven-stage ascent, progression and palette | prototyped |
+| The return: dazzle, closing view, uncapped levers | modelled, `tools/model_descent.py` |
+| Thirteen regions baked to `constants.h` | done, structurally verified |
 | Dither rendering, three-tone, hard edge | prototyped |
 | Title screen | prototyped, both orientations |
 | High-score table layout | mocked at 240 × 135 |

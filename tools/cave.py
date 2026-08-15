@@ -115,6 +115,17 @@ DESCENT = [(5, 19000, 0.72), (4, 22200, 0.66), (3, 25000, 0.60),
 # playable rather than merely unfair.
 LIGHT_FLOOR = 0.06
 
+# The closing view. VIEW_CLOSE is the fraction of screen width swallowed by the
+# time you reach the chains; VIEW_DEPTH how far it dims at the right edge.
+#
+# TUNING RISK, unresolved until this is played: at VIEW_CLOSE = 0.55 the clear
+# forward view at the chains is 83 columns = 0.60s, against 3.62s at the start.
+# Simple visual reaction time is ~0.25s, so that leaves about a third of a
+# second to decide and act. 0.40 gives 0.82s and is the first thing to try if it
+# proves unfair rather than merely brutal.
+VIEW_CLOSE = 0.55
+VIEW_DEPTH = 0.92
+
 
 def _regions():
     out = list(STAGES)
@@ -238,10 +249,10 @@ def draw_frame(cave, py, trail, dist, flash):
     occ = descent_progress(dist)
     if occ > 0.0:
         arr = np.asarray(img, np.float32)
-        edge = W * (1.0 - 0.55 * occ)
+        edge = W * (1.0 - VIEW_CLOSE * occ)
         fade = np.clip((np.arange(W) - edge) / max(1.0, W - edge), 0, 1)
         img = Image.fromarray(
-            (arr * (1.0 - fade * 0.92 * occ)[None, :, None]).astype(np.uint8))
+            (arr * (1.0 - fade * VIEW_DEPTH * occ)[None, :, None]).astype(np.uint8))
         d = ImageDraw.Draw(img)
 
     # Oldest first. The trail brightens toward the player rather than darkening:
