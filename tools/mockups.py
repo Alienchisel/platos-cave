@@ -44,6 +44,49 @@ def fonts():
             ImageFont.truetype(FONT, 13), ImageFont.truetype(FONT, 21))
 
 
+def progress_pips(d, cx, y, reached, pip=7, gap=3, turn_gap=7):
+    """One pip per region, in that region's own light colour, filled up to
+    `reached`. The gap marks the sun -- ascent left of it, return right.
+
+    A region name on its own says nothing about position, and with the return in
+    place the same name occurs twice: ΑΣΤΡΑ is both region 5 and region 9. This
+    makes the sequence legible without reading anything, and doubles as the
+    palette ramp.
+    """
+    n_asc = len(cave.STAGES)
+    total = len(cave.REGIONS)
+    width = total * (pip + gap) - gap + turn_gap
+    x0 = cx - width / 2
+    x = x0
+    for i, region in enumerate(cave.REGIONS):
+        if i == n_asc:
+            x += turn_gap
+        glow = tuple(region[4])
+        if i <= reached:
+            d.rectangle([x, y, x + pip - 1, y + pip - 1], fill=glow)
+        else:
+            d.rectangle([x, y, x + pip - 1, y + pip - 1],
+                        fill=tuple(int(v * 0.16) for v in glow),
+                        outline=tuple(int(v * 0.34) for v in glow))
+        x += pip + gap
+    # Mark the turn with a divider standing in the gap. A tick underneath was
+    # two pixels and simply did not register at this size.
+    turn_x = x0 + n_asc * (pip + gap) + turn_gap / 2 - 1
+    d.line([turn_x, y - 2, turn_x, y + pip + 1], fill=(255, 246, 214))
+
+
+def region_line(dist):
+    """'↓ΑΣΤΡΑ  9/13' -- name, direction and position in one string."""
+    name, returning, won = region_of(dist)
+    idx = 0
+    for i, r in enumerate(cave.REGIONS):
+        if dist >= r[1]:
+            idx = i
+    if won:
+        return name, len(cave.REGIONS) - 1
+    return ("↓" if returning else "") + name, idx
+
+
 def title():
     bust = cave.dithered_bust(
         Path(__file__).parent.parent / "image" / "plato.png", cave.H - 12)
@@ -78,22 +121,33 @@ def scores():
     return img
 
 
-def gameover():
+def gameover(died_at=8100, best=20400):
     img = Image.new("RGB", (cave.W, cave.H), (0, 0, 0))
     d = ImageDraw.Draw(img)
     tiny, small, med, big = fonts()
+    cx = cave.W / 2
 
     w = d.textlength("ΔΕΣΜΩΤΗΣ", font=big)
-    d.text(((cave.W - w) / 2, 26), "ΔΕΣΜΩΤΗΣ", font=big, fill=(232, 116, 36))
+    d.text((cx - w / 2, 12), "ΔΕΣΜΩΤΗΣ", font=big, fill=(232, 116, 36))
     g = "PRISONER"
-    d.text(((cave.W - d.textlength(g, font=tiny)) / 2, 52), g, font=tiny,
+    d.text((cx - d.textlength(g, font=tiny) / 2, 38), g, font=tiny,
            fill=(120, 90, 70))
-    d.line([60, 68, cave.W - 61, 68], fill=(70, 50, 40))
-    for i, (k, v) in enumerate((("REACHED", "ΑΣΤΡΑ  1:41"), ("BEST", "ΣΕΛΗΝΗ"))):
-        d.text((62, 76 + i * 15), k, font=tiny, fill=(110, 110, 110))
-        d.text((132, 76 + i * 15), v, font=small, fill=(200, 200, 200))
+
+    label, idx = region_line(died_at)
+    progress_pips(d, cx, 58, idx)
+
+    line = f"{label}   {idx + 1}/{len(cave.REGIONS)}"
+    d.text((cx - d.textlength(line, font=small) / 2, 76), line, font=small,
+           fill=(225, 225, 225))
+    d.text((cx - d.textlength("1:41", font=small) / 2, 90), "1:41", font=small,
+           fill=(140, 140, 140))
+
+    b_label, b_idx = region_line(best)
+    b = f"BEST  {b_label}  {b_idx + 1}/{len(cave.REGIONS)}"
+    d.text((cx - d.textlength(b, font=tiny) / 2, 106), b, font=tiny,
+           fill=(120, 120, 120))
     m = "[ A ]"
-    d.text(((cave.W - d.textlength(m, font=tiny)) / 2, 116), m, font=tiny,
+    d.text((cx - d.textlength(m, font=tiny) / 2, 121), m, font=tiny,
            fill=(150, 150, 150))
     return img
 
@@ -111,19 +165,26 @@ def victory():
         for x in range((y // 3 % 2) * 6, cave.W, 12):
             d.point((x, y), fill=(26, 28, 34))
 
+    cx = cave.W / 2
     w = d.textlength("ΚΑΤΕΒΗΝ", font=big)
-    d.text(((cave.W - w) / 2, 24), "ΚΑΤΕΒΗΝ", font=big, fill=(238, 238, 245))
+    d.text((cx - w / 2, 12), "ΚΑΤΕΒΗΝ", font=big, fill=(238, 238, 245))
     g = "I WENT DOWN"
-    d.text(((cave.W - d.textlength(g, font=tiny)) / 2, 50), g, font=tiny,
+    d.text((cx - d.textlength(g, font=tiny) / 2, 38), g, font=tiny,
            fill=(120, 125, 140))
-    d.line([46, 66, cave.W - 47, 66], fill=(70, 74, 88))
 
-    d.text((48, 74), "THE CHAINS", font=tiny, fill=(110, 115, 130))
-    d.text((150, 73), "5:46", font=small, fill=(235, 235, 245))
-    d.text((48, 89), "SCORE", font=tiny, fill=(110, 115, 130))
-    d.text((150, 88), "33000", font=small, fill=(235, 235, 245))
+    # Every pip lit: the whole ascent and the whole return.
+    progress_pips(d, cx, 58, len(cave.REGIONS) - 1)
+
+    line = "ΛΕΛΥΤΑΙ   13/13"
+    d.text((cx - d.textlength(line, font=small) / 2, 76), line, font=small,
+           fill=(255, 246, 214))
+    d.text((cx - d.textlength("5:46", font=small) / 2, 90), "5:46", font=small,
+           fill=(150, 155, 170))
+    s = "SCORE  33000"
+    d.text((cx - d.textlength(s, font=tiny) / 2, 106), s, font=tiny,
+           fill=(120, 125, 140))
     m = "[ A ]"
-    d.text(((cave.W - d.textlength(m, font=tiny)) / 2, 116), m, font=tiny,
+    d.text((cx - d.textlength(m, font=tiny) / 2, 121), m, font=tiny,
            fill=(140, 145, 160))
     return img
 
