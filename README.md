@@ -53,6 +53,7 @@ firmware.
 | | |
 | --- | --- |
 | `tools/cave.py` | The game. Simulates a run and renders it. **The reference implementation**: the C++ must match its math. |
+| `tools/stage_sheet.py` | Reference sheet of all seven regions with palettes, hex values and per-stage difficulty numbers. |
 | `tools/image_treatments.py` | Renders a source image twelve ways at panel resolution — dithers, halftone, engraving, duotones. |
 | `tools/preview.py` | 3D point-cloud renderer. Archived direction. |
 | `tools/sample_points.py` | Mesh → point cloud → C header. Archived direction. |
