@@ -100,6 +100,19 @@ def gap_at(dist):
     return H * (GAP_START - (GAP_START - GAP_MIN) * t)
 
 
+# Plain-English gloss per stage. Kept out of STAGES so bake_constants.py, which
+# unpacks those tuples positionally, is unaffected.
+GLOSSES = {
+    "ΣΚΙΑΙ":  "shadows on the wall",
+    "ΠΥΡ":    "the fire behind the prisoners",
+    "ΕΙΔΩΛΑ": "the carried images",
+    "ΥΔΩΡ":   "reflections in water",
+    "ΑΣΤΡΑ":  "the stars",
+    "ΣΕΛΗΝΗ": "the moon",
+    "ΗΛΙΟΣ":  "the sun",
+}
+
+
 def stage_for(dist):
     s = STAGES[0]
     for cand in STAGES:
@@ -237,11 +250,15 @@ def title_frame(bust, blink):
     return img
 
 
-def simulate(seed, seconds, fps=50, render=True):
+def simulate(seed, seconds, fps=50, render=True, render_at=None):
     """Run the game for `seconds` of wall-clock time at `fps`.
 
     Returns (frames, log). With render=False no images are produced, which makes
     it cheap enough to sweep frame rates and verify they agree.
+
+    `render_at` restricts drawing to a set of step indices. A full ascent is
+    ~10k frames; when only a handful are wanted, drawing all of them is the
+    entire cost of the run.
     """
     cave = Cave(seed)
     py, vy = H / 2, 0.0
@@ -278,11 +295,13 @@ def simulate(seed, seconds, fps=50, render=True):
         if render:
             # Age the trail leftwards with the scroll. Appending every point at
             # PLAYER_X, as this originally did, draws a vertical smear under the
-            # player instead of a trail behind it.
+            # player instead of a trail behind it. Updated every step even when
+            # this frame is not drawn, so a drawn frame has a correct history.
             trail = [(tx - columns, ty) for tx, ty in trail if tx - columns >= 0]
             trail.append((PLAYER_X, int(py)))
             trail = trail[-40:]
-            out.append(draw_frame(cave, py, trail, dist, flash))
+            if render_at is None or step_i in render_at:
+                out.append(draw_frame(cave, py, trail, dist, flash))
 
         # Re-read the bounds: the player has moved and the cave has scrolled
         # since `top`/`bot` were taken, so testing against those stale values
