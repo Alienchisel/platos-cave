@@ -88,16 +88,68 @@ THRUST = -9.6       # * H  px/s^2, while the button is held
 VY_MAX = 1.26       # * H  px/s
 
 
+# ---- the return -----------------------------------------------------------
+# Republic ~516e-517a: the prisoner who has seen the sun is obliged to go back
+# down, and his eyes are now useless in the dark -- worse at reading shadows than
+# those who never left. So the descent does not mirror the ascent's light curve.
+# Every region is dimmer coming down than it was going up, and the view closes in.
+#
+# Structurally this is why the descent needs its own levers at all: both ascent
+# levers are spent by the time you reach the sun. The gap bottoms out at 12000
+# and the speed caps at 16000. Repeating the ascent would be strictly easier,
+# because you would already know it.
+SUN_HOLD = 3000                     # distance held at the sun before turning back
+DESCENT_START = SPEED_RAMP_END + SUN_HOLD
+SPEED_DESC_END = 145.0              # columns/second by the time you reach the chains
+GAP_DESC_MIN = 0.15                 # below ~0.13 it stops being difficulty
+WIN_DIST = 33000
+
+# (index into STAGES, distance it begins, how far the dazzled eye falls short of
+# the brightness that region had on the way up). Intervals shrink on the way down
+# -- the descent is compressed as well as darker.
+DESCENT = [(5, 19000, 0.72), (4, 22200, 0.66), (3, 25000, 0.60),
+           (2, 27400, 0.54), (1, 29500, 0.48), (0, 31300, 0.42)]
+
+# The 1px rock edge is drawn regardless of dither density, so it -- not the fill
+# -- is what keeps the passage legible. That is what makes near-total darkness
+# playable rather than merely unfair.
+LIGHT_FLOOR = 0.06
+
+
+def _regions():
+    out = list(STAGES)
+    for idx, frm, dim in DESCENT:
+        name, _, light, rock, glow = STAGES[idx]
+        out.append((name, frm, max(LIGHT_FLOOR, light * dim), rock, glow))
+    return out
+
+
+REGIONS = _regions()
+
+
+def descent_progress(dist):
+    """0 before the turn, ramping to 1 at the chains."""
+    if dist <= DESCENT_START:
+        return 0.0
+    return min(1.0, (dist - DESCENT_START) / (WIN_DIST - DESCENT_START))
+
+
 def speed_at(dist):
-    """Scroll rate in columns/second at a given distance."""
-    return SPEED_START + (SPEED_END - SPEED_START) * min(1.0, dist / SPEED_RAMP_END)
+    """Scroll rate in columns/second. Climbs on the ascent, holds across the sun,
+    then climbs again -- speed is the primary descent lever because the gap has
+    a hard floor and reaction time does not."""
+    if dist <= SPEED_RAMP_END:
+        return SPEED_START + (SPEED_END - SPEED_START) * (dist / SPEED_RAMP_END)
+    return SPEED_END + (SPEED_DESC_END - SPEED_END) * descent_progress(dist)
 
 
 def gap_at(dist):
     """Passage height in pixels. A pure function of distance, so it cannot drift
     with frame rate the way an incremental shrink did."""
     t = min(1.0, dist / GAP_RAMP_END)
-    return H * (GAP_START - (GAP_START - GAP_MIN) * t)
+    gap = GAP_START - (GAP_START - GAP_MIN) * t
+    gap -= (GAP_MIN - GAP_DESC_MIN) * descent_progress(dist)
+    return H * gap
 
 
 # Plain-English gloss per stage. Kept out of STAGES so bake_constants.py, which
@@ -114,8 +166,8 @@ GLOSSES = {
 
 
 def stage_for(dist):
-    s = STAGES[0]
-    for cand in STAGES:
+    s = REGIONS[0]
+    for cand in REGIONS:
         if dist >= cand[1]:
             s = cand
     return s
@@ -178,6 +230,19 @@ def draw_frame(cave, py, trail, dist, flash):
         top, bot = cave.bounds(x)
         d.point((x, int(top)), fill=glow)
         d.point((x, int(bot)), fill=glow)
+
+    # The returning eye cannot see far: on the descent a darkness closes in from
+    # the right, eating forward view directly rather than by proxy. Applied after
+    # the rock edge so the edge is occluded too -- otherwise you could still read
+    # the passage ahead and the mechanic would do nothing.
+    occ = descent_progress(dist)
+    if occ > 0.0:
+        arr = np.asarray(img, np.float32)
+        edge = W * (1.0 - 0.55 * occ)
+        fade = np.clip((np.arange(W) - edge) / max(1.0, W - edge), 0, 1)
+        img = Image.fromarray(
+            (arr * (1.0 - fade * 0.92 * occ)[None, :, None]).astype(np.uint8))
+        d = ImageDraw.Draw(img)
 
     # Oldest first. The trail brightens toward the player rather than darkening:
     # a dim trail sits between the lit and unlit dither tones and vanishes, so it
