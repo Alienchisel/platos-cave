@@ -56,6 +56,7 @@ firmware.
 | `tools/image_treatments.py` | Renders a source image twelve ways at panel resolution — dithers, halftone, engraving, duotones. |
 | `tools/preview.py` | 3D point-cloud renderer. Archived direction. |
 | `tools/sample_points.py` | Mesh → point cloud → C header. Archived direction. |
+| `tools/isolate_head.py` | Cuts a subject off a photographed background onto black, by largest connected component. Works when the subject is clearly brighter than the background; not when their tonal ranges overlap. |
 | `tools/codec.py` | Metal Gear codec mockup. Explored and set aside. |
 
 ### Running it
@@ -99,29 +100,23 @@ socket, a case that physically cannot contain a battery, and no speaker.
 
 ---
 
-## Attribution and licensing
+## Credits
 
-- **3D scan** (`mesh/plato.glb`): *Plato*, Fitzwilliam Museum, object
-  GR.23.1850, via [Sketchfab](https://sketchfab.com/3d-models/plato-1df8376b55e347fb9bb4cf49375d6e5a).
-  Licensed **CC BY 4.0** — attribution required, and this line provides it.
-- ⚠ **`image/plato.png` has unknown provenance.** It supplies the title-screen
-  bust and drove all twelve treatments. Its licence was never established. If
-  this project is ever published or distributed, **that needs resolving first** —
-  the Fitzwilliam scan is a known-clean substitute for the same subject.
+- **3D scan** (`mesh/plato.glb`), used by the archived point-cloud tools:
+  *Plato*, Fitzwilliam Museum, object GR.23.1850, via
+  [Sketchfab](https://sketchfab.com/3d-models/plato-1df8376b55e347fb9bb4cf49375d6e5a),
+  CC BY 4.0.
+- **The sculpture** throughout is the Vatican Museums' herm of Plato, Museo
+  Pio-Clementino, Sala delle Muse, Inv. 305 — a Roman copy after a Greek
+  original of the late 4th century BC. Its base is inscribed ΖΗΝΩΝ.
 
 ---
 
 ## Repository
 
-<https://github.com/Alienchisel/platos-cave> — **private**.
+<https://github.com/Alienchisel/platos-cave> — private.
 
-⚠ **Do not make this public** until the title bust's provenance is resolved.
-`firmware/plato/assets/bust.h` is a derivative of `image/plato.png`, whose
-licence was never established — the image itself is gitignored, but the baked
-bitmap is committed. Regenerating the bust from the Fitzwilliam scan (CC BY 4.0,
-already attributed above) would make the repository distributable.
-
-`image/`, `mesh/` and `preview/` are excluded: ~26 MB of downloaded assets and
+`image/`, `mesh/` and `preview/` are excluded: ~26 MB of source images and
 regenerable output, against ~450 KB of actual source.
 
 `firmware/plato_tqt/` keeps its name because it holds the archived T-QT sketch,

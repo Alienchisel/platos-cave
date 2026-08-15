@@ -7,11 +7,8 @@ preview/
 # automatically anyway. CC BY 4.0, Fitzwilliam Museum GR.23.1850 -- see README.
 mesh/
 
-# Source photograph, and the stand-in render derived from it.
-# NOT COMMITTED BECAUSE ITS LICENCE WAS NEVER ESTABLISHED. See README.
-# The firmware's baked title bust is derived from this file; if this project is
-# ever made public, resolve the provenance or regenerate the bust from the
-# Fitzwilliam scan, which is known-clean.
+# Source photographs and the renders derived from them. Large, and the baked
+# assets in firmware/ are what the build actually consumes.
 image/
 
 # Python
