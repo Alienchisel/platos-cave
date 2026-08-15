@@ -210,6 +210,8 @@ def main() -> None:
 
     data = load_header(args.header)
     print(f"{len(data)} points, mode={args.mode}")
+    # Before rendering, not after: a missing directory would otherwise discard
+    # the whole run at the final write.
     args.out.mkdir(parents=True, exist_ok=True)
 
     frames = [render(data, round(i * 256 / args.frames), args.mode)
@@ -220,9 +222,12 @@ def main() -> None:
     big[0].save(gif, save_all=True, append_images=big[1:], duration=50, loop=0)
 
     # Contact sheet: 8 evenly spaced angles, for judging the silhouette.
+    # Index off len(frames) and clamp: at n=7 the unclamped expression rounds up
+    # to len(frames) whenever fewer than 8 frames were rendered.
     sheet = Image.new("RGB", (W * 4 * 2, H * 2 * 2))
     for n in range(8):
-        f = frames[round(n * args.frames / 8)].resize((W * 2, H * 2), Image.NEAREST)
+        i = min(len(frames) - 1, round(n * len(frames) / 8))
+        f = frames[i].resize((W * 2, H * 2), Image.NEAREST)
         sheet.paste(f, ((n % 4) * W * 2, (n // 4) * H * 2))
     png = args.out / f"contact_{args.mode}.png"
     sheet.save(png)

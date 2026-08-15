@@ -166,10 +166,13 @@ def draw_frame(cave, py, trail, dist, flash):
         d.point((x, int(top)), fill=glow)
         d.point((x, int(bot)), fill=glow)
 
-    trail_col = tuple((glow_a * 0.45).astype(int))
+    # Oldest first. The trail brightens toward the player rather than darkening:
+    # a dim trail sits between the lit and unlit dither tones and vanishes, so it
+    # has to run brighter than the passage, fading back into it with age.
     for i, (tx, ty) in enumerate(trail):
-        if i % 2 == 0:
-            d.point((tx, ty), fill=trail_col)
+        f = (i / max(1, len(trail) - 1)) ** 1.6
+        d.point((tx, ty), fill=tuple((glow_a + (255 - glow_a) * f * 0.85)
+                                     .astype(int)))
 
     # Bright core inside a dark halo: reads against rock and against full sun.
     d.ellipse([PLAYER_X - 3, py - 3, PLAYER_X + 3, py + 3], fill=tuple(rock))
@@ -202,18 +205,35 @@ def dithered_bust(path, size):
 
 
 def title_frame(bust, blink):
+    """Bust left and text right on a landscape panel; stacked on a square one.
+
+    The fixed y positions this originally used (80 / 92 / 110) only worked at
+    128x128 and put the text off the bottom of a 135-tall landscape frame.
+    """
     img = Image.new("RGB", (W, H), (0, 0, 0))
-    img.paste(bust, ((W - bust.width) // 2, 4))
     d = ImageDraw.Draw(img)
     small = ImageFont.truetype(FONT, 10)
     tiny = ImageFont.truetype(FONT, 9)
-    for i, line in enumerate(("CAN YOU ESCAPE", "PLATO'S CAVE?")):
-        w = d.textlength(line, font=small)
-        d.text(((W - w) / 2, 80 + i * 12), line, font=small, fill=(255,) * 3)
-    if blink:
-        msg = "[ PRESS UP ]"
-        w = d.textlength(msg, font=tiny)
-        d.text(((W - w) / 2, 110), msg, font=tiny, fill=(150,) * 3)
+    lines = ("CAN YOU ESCAPE", "PLATO'S CAVE?")
+    msg = "[ PRESS A ]"
+
+    if W > H:                       # landscape: an arcade attract screen
+        img.paste(bust, (6, (H - bust.height) // 2))
+        x = 6 + bust.width + 12
+        for i, line in enumerate(lines):
+            d.text((x, H * 0.24 + i * 14), line, font=small, fill=(255,) * 3)
+        d.line([x, H * 0.62, W - 8, H * 0.62], fill=(90,) * 3)
+        if blink:
+            d.text((x, H * 0.68), msg, font=tiny, fill=(190,) * 3)
+    else:                           # square or portrait: stacked
+        img.paste(bust, ((W - bust.width) // 2, 4))
+        y = bust.height + 12
+        for i, line in enumerate(lines):
+            w = d.textlength(line, font=small)
+            d.text(((W - w) / 2, y + i * 12), line, font=small, fill=(255,) * 3)
+        if blink:
+            w = d.textlength(msg, font=tiny)
+            d.text(((W - w) / 2, y + 30), msg, font=tiny, fill=(190,) * 3)
     return img
 
 
@@ -241,9 +261,11 @@ def simulate(seed, seconds, fps=50, render=True):
         advance = speed_at(dist) * dt
         dist += advance
         col_accum += advance
+        columns = 0
         while col_accum >= 1.0:
             cave.step(dist)
             col_accum -= 1.0
+            columns += 1
 
         name = stage_for(dist)[0]
         if name != prev:
@@ -254,11 +276,19 @@ def simulate(seed, seconds, fps=50, render=True):
         prev = name
 
         if render:
+            # Age the trail leftwards with the scroll. Appending every point at
+            # PLAYER_X, as this originally did, draws a vertical smear under the
+            # player instead of a trail behind it.
+            trail = [(tx - columns, ty) for tx, ty in trail if tx - columns >= 0]
             trail.append((PLAYER_X, int(py)))
-            trail = trail[-16:]
+            trail = trail[-40:]
             out.append(draw_frame(cave, py, trail, dist, flash))
 
-        if py < top or py > bot:            # demo just keeps going
+        # Re-read the bounds: the player has moved and the cave has scrolled
+        # since `top`/`bot` were taken, so testing against those stale values
+        # checks a collision that no longer describes the world.
+        top, bot = cave.bounds(PLAYER_X)
+        if py < top or py > bot:            # the demo just keeps going
             py, vy = (top + bot) / 2, 0.0
     return out, log
 
@@ -270,11 +300,23 @@ def main():
     ap.add_argument("--seconds", type=float, default=230.0,
                     help="wall-clock run length; the full ascent is ~213 s")
     ap.add_argument("--fps", type=int, default=50)
+    ap.add_argument("--panel", default="240x135",
+                    help="panel size WxH; the M5StickS3 in landscape is 240x135")
     ap.add_argument("--scale", type=int, default=3)
     ap.add_argument("--bust", type=Path,
                     default=here.parent / "image" / "plato.png")
     ap.add_argument("--out", type=Path, default=here.parent / "preview")
     args = ap.parse_args()
+
+    try:
+        pw, ph = (int(v) for v in args.panel.lower().split("x"))
+    except ValueError:
+        raise SystemExit(f"--panel must look like 240x135, got {args.panel!r}")
+    configure(pw, ph)
+    # Before simulating, not after: writing is the last thing that happens, and
+    # a missing directory would otherwise discard the whole run at the final step.
+    args.out.mkdir(parents=True, exist_ok=True)
+    print(f"panel {W}x{H}, player at x={PLAYER_X}")
 
     frames, log = simulate(args.seed, args.seconds, args.fps)
     print(f"simulated {len(frames)} frames = {args.seconds:.0f}s at {args.fps} fps")
@@ -288,7 +330,10 @@ def main():
     gif = args.out / "cave.gif"
     big[0].save(gif, save_all=True, append_images=big[1:], duration=60, loop=0)
 
-    bust = dithered_bust(args.bust, 74)
+    # Size the bust to the panel rather than pinning it at 74, which only suited
+    # a 128-square frame. Dithered at final size -- never rescaled after.
+    bust_px = (H - 12) if W > H else min(W - 20, int(H * 0.58))
+    bust = dithered_bust(args.bust, bust_px)
     tf = [title_frame(bust, b) for b in (True, True, False)]
     tbig = [f.resize((W * args.scale, H * args.scale), Image.NEAREST) for f in tf]
     tgif = args.out / "cave_title.gif"
@@ -296,12 +341,16 @@ def main():
 
     # One frame per stage, to check the brightness ramp end to end. Indexed off
     # the transition log rather than recomputed, so it stays right when the
-    # pacing is retuned.
+    # pacing is retuned. Stages the run never reached are left black rather than
+    # filled with a duplicate early frame, which reads as the palette being broken.
     sheet = Image.new("RGB", (W * 2 * len(STAGES), H * 2))
     marks = [0] + [int(t * args.fps) for _, t, _ in log]
-    for i in range(len(STAGES)):
-        idx = min(len(frames) - 1, (marks[i] if i < len(marks) else 0) + 40)
+    for i in range(min(len(STAGES), len(marks))):
+        idx = min(len(frames) - 1, marks[i] + 40)
         sheet.paste(frames[idx].resize((W * 2, H * 2), Image.NEAREST), (i * W * 2, 0))
+    if len(marks) < len(STAGES):
+        print(f"  note: only {len(marks)}/{len(STAGES)} stages reached in "
+              f"{args.seconds:.0f}s; the rest are blank on the sheet")
     sheet.save(args.out / "cave_stages.png")
 
     print(f"wrote {gif}\nwrote {tgif}\nwrote {args.out / 'cave_stages.png'}")
