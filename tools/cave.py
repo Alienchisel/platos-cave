@@ -85,15 +85,21 @@ SPEED_RAMP_END = 16000                 # distance at which SPEED_END is reached
 GAP_START, GAP_MIN = 0.48, 0.21        # as a fraction of H
 GAP_RAMP_END = 12000                   # distance at which GAP_MIN is reached
 
+# How far the passage wanders, per column. Scaled by SPEED_START/speed in
+# Cave.step so the wander stays constant in px/second as the scroll accelerates.
+DRIFT_STEP, DRIFT_CLAMP, DRIFT_DAMP = 0.42, 2.6, 0.94
+
 # Physics, scaled by H so the feel survives a change of panel. Thrust replaces
 # gravity while held, it does not add to it.
-# Lightened ~12% from 7.8 / -9.6 on playtest feedback ("a little bit too
-# heavy"), holding the thrust:gravity ratio at 1.23 so the balance is unchanged
-# and only the weight moves. Time to fall the opening gap goes 248 -> 264 ms and
-# reversing a full-speed dive goes 131 -> 148 ms.
-GRAVITY = 6.9       # * H  px/s^2, downward
-THRUST = -8.5       # * H  px/s^2, while the button is held
-VY_MAX = 1.26       # * H  px/s
+# Found by playtest on the web build's live sliders, not by modelling. Lighter
+# than the original 7.8 / -9.6 / 1.26 in all three, and with a notably higher
+# thrust:gravity ratio -- 1.50 against 1.23 -- so there is more authority to
+# arrest a fall. Recovering from a full-speed dive costs 9.0 px rather than
+# 12.6, which at the chains is the difference between spending 63% of the usable
+# margin and 89% of it.
+GRAVITY = 5.0       # * H  px/s^2, downward
+THRUST = -7.5       # * H  px/s^2, while the button is held
+VY_MAX = 1.00       # * H  px/s
 
 
 # ---- the return -----------------------------------------------------------
@@ -263,8 +269,19 @@ class Cave:
         where n follows from scroll speed -- so the cave's shape per column is
         frame-rate independent by construction."""
         # Random walk with a restoring pull, so it wanders without escaping.
-        self.drift += self.rng.uniform(-0.42, 0.42)
-        self.drift = max(-2.6, min(2.6, self.drift)) * 0.94
+        #
+        # Scaled against scroll speed. The drift is expressed per COLUMN, so
+        # without this the passage's vertical speed in px/second rises with the
+        # scroll: at the chains a 3-sigma swing moved it at 280 px/s against a
+        # player ceiling of 135, meaning the cave could climb about twice as
+        # fast as anyone could follow. Late-game deaths were partly unavoidable
+        # rather than earned. Holding the start-of-run rate keeps the passage's
+        # behaviour constant and leaves difficulty to the levers that are meant
+        # to carry it -- the narrowing gap and the shrinking forward view.
+        scale = SPEED_START / speed_at(dist)
+        self.drift += self.rng.uniform(-DRIFT_STEP, DRIFT_STEP) * scale
+        cap = DRIFT_CLAMP * scale
+        self.drift = max(-cap, min(cap, self.drift)) * DRIFT_DAMP
         self.centre += self.drift
         self.gap = gap_at(dist)
         margin = self.gap / 2 + H * 0.06

@@ -423,6 +423,37 @@ time without touching the geometry. Narrowing alone would demand more precision;
 narrowing *and* accelerating demands precision under pressure, which is the
 better curve.
 
+### ⚠ The passage must not outrun the player
+
+**Found by playtest, and it was a bug.** The drift is defined *per column*, but
+the scroll accelerates — so the passage's vertical speed in **px/second** rose
+with it. Measured before the fix:
+
+| | scroll | passage 3σ | passage max | player ceiling |
+| --- | --- | --- | --- | --- |
+| start | 55 col/s | 110 px/s | 143 px/s | 135 px/s |
+| ΣΕΛΗΝΗ | 83 col/s | 166 px/s | 215 px/s | 135 px/s |
+| the chains | 140 col/s | **280 px/s** | **363 px/s** | 135 px/s |
+
+From ΣΕΛΗΝΗ onward the cave could climb faster than any player could follow, and
+by the chains roughly twice as fast. Late-game deaths were **partly unavoidable
+rather than earned**, which is the one thing a difficulty curve may not be.
+
+`Cave.step` now scales the drift by `SPEED_START / speed_at(dist)`, holding the
+passage's px/second wander at its start-of-run value — a rate playtesting had
+already shown to be fair. Difficulty is left to the two levers meant to carry it:
+the narrowing gap and the shrinking forward view.
+
+**The symptom that exposed it** was the autopilot preferring a *higher* velocity
+clamp than the player did. It wasn't disagreeing about feel — it was chasing a
+passage that moved too fast, and needed the speed to keep up.
+
+**Consequence to watch:** the autopilot went from completing **0/5** runs to
+**5/5**. That confirms the endgame was impossible rather than merely hard, but it
+means the difficulty that remains is now entirely legitimate — and possibly not
+enough. If the game now plays too easy, the fix is the gap or the scroll, not
+restoring a generator that outran the player.
+
 ### Constants
 
 | Constant | Value | |

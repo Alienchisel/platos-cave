@@ -91,7 +91,7 @@ const REGIONS=[
 const SPEED_START=55.0,SPEED_END=100.0,SPEED_RAMP_END=16000,SPEED_DESC_END=145.0;
 const GAP_START=0.48,GAP_MIN=0.21,GAP_RAMP_END=12000,GAP_DESC_MIN=0.15;
 const DESCENT_START=19000,WIN_DIST=33000;
-const GRAVITY=6.9,THRUST=-8.5,VY_MAX=1.26;
+const GRAVITY=5.0,THRUST=-7.5,VY_MAX=1.0;
 const DRIFT_STEP=0.42,DRIFT_CLAMP=2.6,DRIFT_DAMP=0.94;
 const WALL_MARGIN=0.06,PLAYER_X_FRAC=0.17;
 const TWIN_TRAIL=1,TRAIL_BASE=1.4,TRAIL_SPREAD=0.1,TRAIL_LEN=40;
@@ -177,8 +177,15 @@ class Cave {
     this.cols = new Array(W).fill(0).map(() => [this.centre, this.gap]);
   }
   step(dist) {
-    this.drift += (this.r() * 2 - 1) * DRIFT_STEP;
-    this.drift = clamp(this.drift, -DRIFT_CLAMP, DRIFT_CLAMP) * DRIFT_DAMP;
+    // Scaled against scroll speed -- must match cave.py's Cave.step. The drift
+    // is per COLUMN, so without this the passage's vertical speed in px/s rises
+    // with the scroll: at the chains a 3-sigma swing moved it at 280 px/s
+    // against a player ceiling of 135, so the cave could climb about twice as
+    // fast as anyone could follow, and late deaths were partly unavoidable.
+    const scale = SPEED_START / speedAt(dist);
+    this.drift += (this.r() * 2 - 1) * DRIFT_STEP * scale;
+    const cap = DRIFT_CLAMP * scale;
+    this.drift = clamp(this.drift, -cap, cap) * DRIFT_DAMP;
     this.centre += this.drift;
     this.gap = gapAt(dist);
     const m = this.gap / 2 + H * WALL_MARGIN;
