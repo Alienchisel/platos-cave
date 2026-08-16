@@ -216,7 +216,7 @@ socket, a case that physically cannot contain a battery, and no speaker.
 
 ## Repository
 
-<https://github.com/Alienchisel/platos-cave> — private.
+<https://github.com/Alienchisel/platos-cave>
 
 `image/`, `mesh/` and `preview/` are excluded: ~26 MB of source images and
 regenerable output, against ~450 KB of actual source.
