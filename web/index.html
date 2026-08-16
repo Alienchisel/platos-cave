@@ -272,9 +272,20 @@ function saveIni(ini) { localStorage.setItem('pc_ini', ini.join('')); }
 // once per run -- the table cannot change mid-flight, and rebuilding it every
 // frame would read localStorage sixty times a second.
 function buildTargets() {
-  const t = loadScores().map(r => ({ at: r.dist, ini: r.ini, mine: false }));
   const mine = loadMyBest();
-  if (mine > 0) t.push({ at: mine, ini: loadIni().join(''), mine: true });
+  // Drop any table entry sitting exactly on your best. A qualifying run leaves
+  // one behind by construction, so without this nearly every player ends up
+  // with their own initials twice on the same pixel -- and the chase readout,
+  // which takes the first target ahead, could name a rival you have tied
+  // instead of naming you.
+  const t = loadScores().filter(r => r.dist !== mine)
+                        .map(r => ({ at: r.dist, ini: r.ini, mine: false }));
+  if (mine > 0) {
+    // A best can exist before a name does: runs under the table's last entry
+    // set a personal best without ever opening initials entry. ΣΥ is "you".
+    const named = localStorage.getItem('pc_ini');
+    t.push({ at: mine, ini: named ? loadIni().join('') : 'ΣΥ', mine: true });
+  }
   return t.sort((a, b) => a.at - b.at);
 }
 
@@ -697,7 +708,12 @@ function frame(now) {
     const over = S.py < top || S.py > bot;
     if (over || S.dist >= WIN_DIST) {
       S.state = over ? 'dead' : 'won';
-      S.hitY = clamp(S.py, 4, H - 4); S.deadT = 0;
+      // Not clamped onto the panel. The ring's whole job is to say *here*, and
+      // a clamped ring says it about somewhere you did not hit. Death happens
+      // within one frame of leaving the passage -- at most ~7 px past a wall
+      // that WALL_MARGIN keeps ~8 px inside the panel -- so the true point is
+      // essentially always visible, and clipping beats lying when it is not.
+      S.hitY = S.py; S.deadT = 0;
       // Every run counts toward your own best, whether or not it makes the
       // table -- otherwise early progress is invisible until you beat ΘΡΑ.
       // Except practice runs, which started partway up and did not earn it.
