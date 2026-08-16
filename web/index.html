@@ -38,12 +38,25 @@
 
   /* The constants actually under test. This is a tuning rig, so "it feels
      floaty" is only useful next to the number that makes it so. */
-  #tune{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 14px;
-    padding-top:calc(var(--gap) * .6);border-top:1px solid var(--rule);
-    font-size:11px;color:#4e5462;font-variant-numeric:tabular-nums;
-    max-width:640px;text-align:center}
-  #tune span{white-space:nowrap}
-  #tune i{font-style:normal;color:var(--dim)}
+  #tune{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;
+    gap:6px 16px;padding-top:calc(var(--gap) * .6);
+    border-top:1px solid var(--rule);font-size:11px;color:#4e5462;
+    font-variant-numeric:tabular-nums;max-width:720px}
+  #tune label{display:flex;align-items:center;gap:7px;white-space:nowrap}
+  #tune i{font-style:normal;color:var(--dim);min-width:62px;text-align:right}
+  #tune output{min-width:38px;color:var(--text)}
+  #tune output.changed{color:var(--fire)}
+  #tune input[type=range]{-webkit-appearance:none;appearance:none;
+    width:94px;height:3px;background:var(--rule);border-radius:2px;outline:none}
+  #tune input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;
+    width:11px;height:11px;border-radius:50%;background:var(--sun);
+    border:none;cursor:ew-resize}
+  #tune input[type=range]::-moz-range-thumb{width:11px;height:11px;
+    border-radius:50%;background:var(--sun);border:none;cursor:ew-resize}
+  #tune button{font:inherit;font-size:11px;color:var(--dim);
+    background:var(--panel);border:1px solid var(--rule);border-radius:3px;
+    padding:2px 9px;cursor:pointer}
+  #tune button:hover{color:var(--text);border-color:var(--dim)}
 
   kbd{background:var(--panel);border:1px solid var(--rule);border-radius:3px;
     padding:1px 6px;color:var(--text);font:inherit;font-size:11px}
@@ -78,7 +91,7 @@ const REGIONS=[
 const SPEED_START=55.0,SPEED_END=100.0,SPEED_RAMP_END=16000,SPEED_DESC_END=145.0;
 const GAP_START=0.48,GAP_MIN=0.21,GAP_RAMP_END=12000,GAP_DESC_MIN=0.15;
 const DESCENT_START=19000,WIN_DIST=33000;
-const GRAVITY=7.8,THRUST=-9.6,VY_MAX=1.26;
+const GRAVITY=6.9,THRUST=-8.5,VY_MAX=1.26;
 const DRIFT_STEP=0.42,DRIFT_CLAMP=2.6,DRIFT_DAMP=0.94;
 const WALL_MARGIN=0.06,PLAYER_X_FRAC=0.17;
 const TWIN_TRAIL=1,TRAIL_BASE=1.4,TRAIL_SPREAD=0.1,TRAIL_LEN=40;
@@ -90,6 +103,13 @@ const BAYER=[0,128,32,159,8,135,40,167,191,64,223,96,199,72,231,104,48,175,16,14
 
 const PLAYER_X = Math.max(8, Math.round(W * PLAYER_X_FRAC));
 const DT_CLAMP = 0.05;          // one slow frame must not teleport the player
+
+// Live-tunable copies of the four constants the hardware cannot yet answer for.
+// Physics reads TUNE, never the baked values, so the sliders below are the real
+// thing rather than a preview -- find a number here and it gets baked back into
+// cave.py, which is the single source everything else derives from.
+const BAKED = { gravity: GRAVITY, thrust: THRUST, vyMax: VY_MAX, viewClose: VIEW_CLOSE };
+const TUNE = { ...BAKED };
 
 // ---------------------------------------------------------------- rendering
 const view = document.getElementById('c');
@@ -253,10 +273,16 @@ function release() {
     S.ini[S.slot] = ALPHABET[(ALPHABET.indexOf(S.ini[S.slot]) + 1) % ALPHABET.length];
   }
 }
+// A focused slider owns its own keys: swallowing them here would make the
+// controls unusable from the keyboard, which is also the accessible path.
+const inControl = e => e.target instanceof Element &&
+                       e.target.closest('#tune') !== null;
 addEventListener('keydown', e => {
+  if (inControl(e)) return;
   if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); press(); }
 });
 addEventListener('keyup', e => {
+  if (inControl(e)) return;
   if (e.code === 'Space' || e.code === 'ArrowUp') release();
 });
 view.addEventListener('pointerdown', e => { e.preventDefault(); press(); });
@@ -315,7 +341,7 @@ function draw() {
   // The closing view, applied after the edge so the edge is occluded too.
   const occ = descentProgress(S.dist);
   if (occ > 0) {
-    const e = W * (1 - VIEW_CLOSE * occ);
+    const e = W * (1 - TUNE.viewClose * occ);
     const grd = g.createLinearGradient(e, 0, W, 0);
     grd.addColorStop(0, 'rgba(0,0,0,0)');
     grd.addColorStop(1, `rgba(0,0,0,${VIEW_DEPTH * occ})`);
@@ -482,8 +508,8 @@ function frame(now) {
   }
   if (S.state === 'play') {
     S.t += dt;
-    S.vy += (held ? THRUST : GRAVITY) * H * dt;
-    S.vy = clamp(S.vy, -VY_MAX * H, VY_MAX * H);
+    S.vy += (held ? TUNE.thrust : TUNE.gravity) * H * dt;
+    S.vy = clamp(S.vy, -TUNE.vyMax * H, TUNE.vyMax * H);
     S.py += S.vy * dt;
 
     const adv = speedAt(S.dist) * dt;
@@ -541,15 +567,65 @@ function hud() {
 // Changing the hash does not reload on its own, and the seed is read once.
 addEventListener('hashchange', () => location.reload());
 
-// The four constants the hardware build cannot yet answer for. Shown because
-// this page exists to judge them, and "too floaty" is only actionable beside
-// the number that causes it.
-document.getElementById('tune').innerHTML = [
-  ['gravity', GRAVITY], ['thrust', THRUST], ['vy max', VY_MAX],
-  ['view close', VIEW_CLOSE],
-].map(([k, v]) => `<span><i>${k}</i> ${v}</span>`).join('') +
-  `<span><i>speed</i> ${SPEED_START}&rarr;${SPEED_DESC_END}</span>` +
-  `<span><i>gap</i> ${GAP_START}&rarr;${GAP_DESC_MIN}&times;H</span>`;
+// Live controls for the four constants the hardware cannot yet settle. These
+// are the point of the page: find a number by feel, then report it and it gets
+// baked into cave.py, which every other build derives from.
+const KNOBS = [
+  ['gravity',   'gravity',   3, 12,   0.1],
+  ['thrust',    'thrust',  -16, -4,   0.1],
+  ['vyMax',     'vy max',  0.6, 2.4, 0.02],
+  ['viewClose', 'view close', 0, 0.8, 0.01],
+];
+const tuneEl = document.getElementById('tune');
+tuneEl.innerHTML = KNOBS.map(([key, label, lo, hi, step]) =>
+  `<label><i>${label}</i>` +
+  `<input type=range id="k_${key}" min="${lo}" max="${hi}" step="${step}">` +
+  `<output id="o_${key}"></output></label>`).join('') +
+  `<button id=k_reset title="back to the values baked from cave.py">reset</button>`;
+
+function hashState() {
+  const q = {};
+  (location.hash.slice(1) + '&' + location.search.slice(1)).split('&')
+    .forEach(p => { const [k, v] = p.split('='); if (k) q[k] = v; });
+  return q;
+}
+function applyHashTune() {
+  const q = hashState();
+  const map = { g: 'gravity', t: 'thrust', v: 'vyMax', vc: 'viewClose' };
+  for (const [short, key] of Object.entries(map)) {
+    if (q[short] !== undefined && !Number.isNaN(+q[short])) TUNE[key] = +q[short];
+  }
+}
+function writeHash() {
+  const bits = [];
+  if (URL_SEED !== null) bits.push(`seed=${URL_SEED}`);
+  const map = { g: 'gravity', t: 'thrust', v: 'vyMax', vc: 'viewClose' };
+  for (const [short, key] of Object.entries(map)) {
+    if (TUNE[key] !== BAKED[key]) bits.push(`${short}=${TUNE[key]}`);
+  }
+  // replaceState, not location.hash: assigning the hash fires hashchange, and
+  // hashchange reloads the page -- which would restart the run on every drag.
+  history.replaceState(null, '', bits.length ? '#' + bits.join('&') : location.pathname);
+}
+function syncKnobs() {
+  for (const [key] of KNOBS) {
+    document.getElementById('k_' + key).value = TUNE[key];
+    const o = document.getElementById('o_' + key);
+    o.textContent = (+TUNE[key]).toFixed(key === 'viewClose' || key === 'vyMax' ? 2 : 1);
+    o.classList.toggle('changed', TUNE[key] !== BAKED[key]);
+  }
+}
+applyHashTune();
+syncKnobs();
+for (const [key] of KNOBS) {
+  document.getElementById('k_' + key).addEventListener('input', e => {
+    TUNE[key] = +e.target.value; syncKnobs(); writeHash();
+  });
+}
+document.getElementById('k_reset').addEventListener('click', () => {
+  Object.assign(TUNE, BAKED); syncKnobs(); writeHash();
+  document.getElementById('k_reset').blur();
+});
 
 fitCanvas(); reset(); fpsT0 = performance.now(); requestAnimationFrame(frame);
 </script>
