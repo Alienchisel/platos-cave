@@ -20,12 +20,33 @@ import imgutil
 
 FONT = "C:/Windows/Fonts/consola.ttf"
 
-# Placeholder table: initials and a distance. Names are the Republic's cast
-# rather than AAA/BBB. The region is *derived* from the distance rather than
-# typed alongside it -- hand-written pairs drift out of agreement the moment the
-# thresholds are retuned, which they already had.
-SCORES = [("ΜΕΓ", 33000), ("ΣΩΚ", 29140), ("ΓΛΑ", 24380), ("ΧΑΡ", 19510),
-          ("ΑΔΕ", 15220), ("ΚΕΦ", 8640), ("ΘΡΑ", 3910), ("ΠΟΛ", 1180)]
+# Default table. The header reads ΟΙ ΛΥΘΕΝΤΕΣ -- "those who were released" -- so
+# the ordering carries the joke: the Neoplatonists at the top because they
+# claimed the ascent, the Republic's cast below because they only heard it
+# described, and Thrasymachus last because he argued against the premise.
+#
+# Every Neoplatonist is past the sun; nobody from the Republic reaches it. And
+# Socrates tops out at ΣΕΛΗΝΗ climbing while Damascius is at ΣΕΛΗΝΗ descending --
+# the same region twice, told apart only by the arrow.
+#
+# Plato is deliberately absent. He is the bust on the title screen, presiding
+# over the table rather than competing in it.
+#
+# Porphyry, Life of Plotinus 23, reports his teacher reaching union four times
+# in their years together, and himself once at sixty-eight. That is his account
+# of his own master written long after, so treat the ranking as a joke resting
+# on hagiography rather than as a claim about anything.
+#
+# The region is *derived* from the distance rather than typed beside it --
+# hand-written pairs drift the moment the thresholds are retuned, as they had.
+SCORES = [("ΠΛΩ", 33000),   # Plotinus    -- four times, so: a completed run
+          ("ΠΟΡ", 30200),   # Porphyry    -- once, at 68
+          ("ΙΑΜ", 27900),   # Iamblichus  -- theurgy as the road up
+          ("ΠΡΟ", 24100),   # Proclus
+          ("ΔΑΜ", 20300),   # Damascius   -- last head of the Academy
+          ("ΣΩΚ", 14600),   # Socrates    -- he only described it
+          ("ΓΛΑ", 7200),    # Glaucon     -- he only listened
+          ("ΘΡΑ", 940)]     # Thrasymachus -- barely out of the shadows
 
 
 def region_of(dist):

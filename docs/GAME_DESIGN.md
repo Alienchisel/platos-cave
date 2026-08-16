@@ -306,9 +306,41 @@ Header: **ΟΙ ΛΥΘΕΝΤΕΣ** — roughly "those who were released." Plato d
 prisoner being released from his bonds in the cave passage. *This phrase is a
 formation for this project, not a quotation from the text.*
 
-Eight entries at 13 px sit comfortably in 135 px with a header. Stored in NVS via
-`Preferences`; ~70 bytes. Default entries are the *Republic*'s cast — ΣΩΚ, ΓΛΑ,
-ΑΔΕ, ΚΕΦ, ΘΡΑ, ΠΟΛ — rather than AAA/BBB.
+Eight entries at 13 px sit comfortably in 135 px with a header. Nine do not.
+Stored in NVS via `Preferences`; ~70 bytes.
+
+### The default table
+
+Not AAA/BBB, and not arbitrary — **the ordering carries the joke.** The header
+means *those who were released*, so the top of the table belongs to the people
+who claimed to have made the ascent, and the bottom to the people who merely
+heard it described.
+
+| | | |
+| --- | --- | --- |
+| 1 | **ΠΛΩ** | Plotinus — a completed run |
+| 2 | **ΠΟΡ** | Porphyry |
+| 3 | **ΙΑΜ** | Iamblichus |
+| 4 | **ΠΡΟ** | Proclus |
+| 5 | **ΔΑΜ** | Damascius — last head of the Academy |
+| 6 | **ΣΩΚ** | Socrates — he only described it |
+| 7 | **ΓΛΑ** | Glaucon — he only listened |
+| 8 | **ΘΡΑ** | Thrasymachus — he argued against the premise |
+
+Every Neoplatonist is past the sun; nobody from the *Republic* reaches it. And
+the distances were picked so ΣΕΛΗΝΗ lands at rows 5 and 6 — Damascius descending,
+Socrates ascending — with ΠΥΡ likewise at rows 2 and 8. The same regions in
+opposite directions, told apart only by the arrow, which is also the clearest
+demonstration of why the arrow exists.
+
+**Plato is deliberately absent.** He is the bust on the title screen, presiding
+over the table rather than competing in it.
+
+Porphyry (*Life of Plotinus* 23) reports his teacher reaching union four times in
+their years together, and himself once at sixty-eight — which is what puts those
+two at the top. It is his account of his own master written long after, so the
+ranking is a joke resting on hagiography, not a claim about anything. That note
+belongs in the code, not on the screen.
 
 ### Initials entry
 
