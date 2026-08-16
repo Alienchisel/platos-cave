@@ -19,6 +19,13 @@ One more borrowing, from the *Phaedrus* rather than the *Republic*: thrust
 against gravity, with you holding the balance, is already the charioteer and his
 two horses. So the trail runs as two strands, whichever is being obeyed leading.
 
+![gameplay](docs/images/gameplay.gif)
+
+*Leaving the cave: ΕΙΔΩΛΑ into ΥΔΩΡ, the largest colour jump in the run. Real
+time, at the panel's true 240 × 135 shown at 2×.*
+
+---
+
 ![every region, ascending above and returning below](docs/images/descent_regions.png)
 
 *All thirteen regions: the ascent along the top, the return below it. Every one
@@ -96,6 +103,7 @@ input design and the high-score entry screen.
 | `tools/bake_constants.py` | `cave.py` → `constants.h`. Also reports any constant that never reached the firmware. |
 | `tools/verify_bake.py` | Parses the generated C back out and checks it. There is no compiler here, so nothing else would catch malformed output. |
 | `tools/mockups.py` | The non-gameplay screens — title, high scores, both deaths, victory — at true 240 × 135. |
+| `tools/readme_gif.py` | The gameplay loop above. Sized against a byte budget, since it is committed. |
 | `tools/stage_sheet.py` | Reference sheet of the seven ascent regions with palettes, hex values and per-stage difficulty numbers. |
 | `tools/model_descent.py` | The full run including the return: difficulty curves across all three levers, and every region ascending and returning. |
 | `tools/imgutil.py` | Palette-PNG saving for the committed reference images. |
