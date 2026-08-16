@@ -286,6 +286,14 @@ T.reset(3); T.setLast(0); T.press();
 T.S.dist = 100; T.S.state = 'dead'; T.S.pending = false; T.S.deadT = T.DEATH_HOLD;
 clock += 10; T.press();
 ok(T.S.state === 'ready', `a held-out death restarts on one press (${T.S.state})`);
+// The ring must mark where you actually hit. Clamping it onto the panel made it
+// point at a place the player never was.
+T.reset(3); T.setLast(0); T.press();
+T.setHeld(false);
+for (let i = 1; i <= 400 && T.S.state !== 'dead'; i++) T.frame(i * 1000 / 60);
+ok(T.S.state === 'dead' && T.S.hitY === T.S.py,
+   `the impact ring sits on the true impact point (hitY ${T.S.hitY.toFixed(1)}` +
+   ` vs py ${T.S.py.toFixed(1)})`);
 
 // 9. Chase targets: the table plus your own best, in ascending order.
 console.log('\nin-tunnel markers:');
@@ -299,6 +307,30 @@ tg = T.buildTargets();
 const mine = tg.filter(m => m.mine);
 ok(mine.length === 1 && mine[0].at === 1500 && mine[0].ini === 'ΧΑΡ',
    `your best joins the targets as ΧΑΡ 1500 (${mine.map(m => m.ini + ' ' + m.at)})`);
+
+// A best can exist before a name does: any run under ΘΡΑ's 940 sets one without
+// ever opening initials entry, and a cream marker reading ΑΑΑ looks like a rival.
+delete store['pc_ini'];
+ok(T.buildTargets().find(m => m.mine).ini === 'ΣΥ',
+   `an unnamed player's own marker reads ΣΥ (${T.buildTargets().find(m => m.mine).ini})`);
+store['pc_ini'] = 'ΧΑΡ';
+
+// A qualifying run leaves a table entry exactly on your best. Two markers on
+// one pixel, both with your initials, and the chase could name the rival.
+delete store['pc_scores']; delete store['pc_mybest'];
+T.noteRun(5000); T.commitScore('ΧΑΡ', 5000);
+tg = T.buildTargets();
+ok(tg.filter(m => m.at === 5000).length === 1,
+   `one marker per distance after a qualifying run ` +
+   `(${tg.filter(m => m.at === 5000).map(m => m.ini + (m.mine ? '/cream' : '/glow'))})`);
+ok(tg.find(m => m.at === 5000).mine, 'and the one kept is yours, not the copy');
+// A genuine tie with a seeded name collapses the same way.
+delete store['pc_scores']; delete store['pc_mybest'];
+T.noteRun(7200);                                   // exactly ΓΛΑ's seeded score
+tg = T.buildTargets();
+ok(tg.filter(m => m.at === 7200).length === 1 && tg.find(m => m.at === 7200).mine,
+   'tying a seeded score leaves your marker, not theirs');
+delete store['pc_scores']; delete store['pc_mybest'];
 // Armed on the first playing frame, so a practice start does not fire eight
 // overtakes on the way in.
 T.reset(3); T.S.dist = 20000; T.S.practice = true; T.setLast(0); T.press();
