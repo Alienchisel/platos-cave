@@ -336,6 +336,13 @@ formation for this project, not a quotation from the text.*
 Eight entries at 13 px sit comfortably in 135 px with a header. Nine do not.
 Stored in NVS via `Preferences`; ~70 bytes.
 
+**Initials persist between runs.** Entry opens on the last name committed rather
+than on ΑΑΑ, so a repeat player confirms with three holds instead of walking the
+alphabet again. On one button, with runs ending around fifty seconds, retyping is
+the single largest tax the shell imposes — and the name almost never changes.
+Three more bytes in NVS. An unreadable stored value falls back to ΑΑΑ, since the
+failure mode otherwise is an entry screen showing a letter no button can reach.
+
 ### The default table
 
 Not AAA/BBB, and not arbitrary — **the ordering carries the joke.** The header

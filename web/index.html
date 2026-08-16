@@ -253,6 +253,16 @@ function loadMyBest() { return +(localStorage.getItem('pc_mybest') || 0); }
 function noteRun(d) {
   if (Math.round(d) > loadMyBest()) localStorage.setItem('pc_mybest', Math.round(d));
 }
+// Your initials persist. Three taps-and-holds per run is a real tax when you
+// die every fifty seconds, and the name almost never changes. On the device
+// this matters more, not less: one button, no keyboard, and NVS to hold it.
+function loadIni() {
+  const v = localStorage.getItem('pc_ini') || '';
+  return [...v].length === 3 && [...v].every(c => ALPHABET.includes(c))
+    ? [...v] : ['Α', 'Α', 'Α'];
+}
+function saveIni(ini) { localStorage.setItem('pc_ini', ini.join('')); }
+
 // The lowest entry still above you: the next name to beat.
 function nextAbove(d) {
   return loadScores().filter(r => r.dist > d).sort((a, b) => a.dist - b.dist)[0] || null;
@@ -279,7 +289,7 @@ function press() {
   // 'initials' resolves on release, since it needs the press duration.
   if (S.state === 'dead' || S.state === 'won') {
     if (S.pending) { S.pending = false; S.state = 'initials'; S.slot = 0;
-                     S.ini = ['Α', 'Α', 'Α']; }
+                     S.ini = loadIni(); }
     else reset();
     return;
   }
@@ -293,6 +303,7 @@ function release() {
   // programmable button -- worth feeling before the hardware decides for us.
   if (performance.now() - pressAt >= LONG_MS) {
     if (++S.slot >= 3) {
+      saveIni(S.ini);
       commitScore(S.ini.join(''), S.dist);
       S.state = 'scores';
     }
