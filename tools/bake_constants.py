@@ -82,6 +82,26 @@ def emit() -> str:
     p.append(f"constexpr float VIEW_DEPTH = {cave.VIEW_DEPTH:.2f}f;"
              "   // dimming at the right edge\n\n")
 
+    p.append("// ---- trail ------------------------------------------------------\n"
+             "// Two constraints the firmware must honour or the trail vanishes:\n"
+             "//\n"
+             "//  1. Draw it as CONNECTED SEGMENTS, not isolated points. A single\n"
+             "//     pixel cannot compete with a single-pixel dither -- in a\n"
+             "//     50-80% lit field it is just another dither cell.\n"
+             "//  2. Flip its polarity on the region's light. Brighter than the\n"
+             "//     passage below 128/255, darker above; a trail that only\n"
+             "//     brightens is invisible from SELENE onward.\n"
+             "//\n"
+             "// TWIN_TRAIL draws two strands rather than one: the Phaedrus\n"
+             "// chariot's two horses, whichever is being obeyed leading. Set 0\n"
+             "// for a single strand.\n")
+    p.append(f"constexpr uint8_t TWIN_TRAIL   = {1 if cave.TWIN_TRAIL else 0};\n")
+    p.append(f"constexpr float   TRAIL_BASE   = {cave.TRAIL_BASE:.2f}f;"
+             "  // px of divergence at the player\n")
+    p.append(f"constexpr float   TRAIL_SPREAD = {cave.TRAIL_SPREAD:.2f}f;"
+             "  // px added per frame of age\n")
+    p.append("constexpr uint8_t TRAIL_LEN    = 40;      // points retained\n\n")
+
     p.append("// ---- physics ----------------------------------------------------\n"
              "// Scaled by panel height H. THRUST replaces gravity while the\n"
              "// button is held; it does not add to it.\n"

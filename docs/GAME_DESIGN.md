@@ -171,8 +171,42 @@ palette lookup.
 
 ### The player
 
-A pure white 2 × 2 core inside a dark halo, with a short fading trail. White
-because it must read against everything from near-darkness to full sun.
+A pure white 2 × 2 core inside a dark halo. White because it must read against
+everything from near-darkness to full sun.
+
+**It stays a dot.** A chariot sprite was drawn and tested: at 15 × 9 it nearly
+fills the 21 px passage at the chains, leaving ~3 px of clearance either side,
+and would need a hitbox far smaller than the drawing — which lies to the player,
+the worst kind of difficulty. At 9 × 5 it is an unreadable blob. The dot is also
+already the right image: a point of light in a cave.
+
+### The trail — two horses
+
+The *Phaedrus* (246a–254e) has the soul as a charioteer with two horses, one
+noble and one unruly, pulling opposite ways. **That is already the control
+scheme** — thrust against gravity, with the player holding the balance. So the
+trail shows it rather than a sprite depicting it: two strands, whichever is being
+obeyed running bright while the other lags, diverging with age like reins.
+
+Note this is a second dialogue. The game's structure is the *Republic*'s cave;
+the chariot is *Phaedrus*. Both are ascent myths about the soul, so the blend is
+defensible, but it is a blend.
+
+`TWIN_TRAIL = False` gives a single strand.
+
+### ⚠ Two constraints the trail must honour
+
+Both were discovered by the trail being invisible above ΥΔΩΡ, and **neither fix
+alone was sufficient**:
+
+1. **Draw it as connected segments, never isolated points.** A single pixel
+   cannot compete with a single-pixel dither — in a 50–80% lit field one
+   differently-coloured pixel is simply another dither cell.
+2. **Flip its polarity on the region's light.** Brighter than the passage below
+   128/255, darker above. A trail that only brightens has nothing to brighten
+   into once the passage is near-solid pale.
+
+Verified from ΣΚΙΑΙ 36/255 through ΣΕΛΗΝΗ 204/255.
 
 ### Open: the sun erases the dither
 
