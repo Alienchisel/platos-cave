@@ -53,6 +53,25 @@ constexpr float   TRAIL_BASE   = 1.40f;  // px of divergence at the player
 constexpr float   TRAIL_SPREAD = 0.10f;  // px added per frame of age
 constexpr uint8_t TRAIL_LEN    = 40;      // points retained
 
+// ---- region texture ---------------------------------------------
+// Three regions name something that behaves, not just something
+// coloured. Matched on Region::label, so the return gets them too.
+constexpr uint8_t FLICKER_LABEL = LBL_PYR;   // firelight is not steady
+constexpr float   FLICKER_DEPTH = 0.16f;  // peak swing in light
+constexpr uint8_t STARS_LABEL   = LBL_ASTRA;   // rock reads as sky by now
+constexpr uint16_t STAR_RARITY  = 1400;    // 1 in N rock pixels
+// Stars are placed by WORLD column, not screen column, or they
+// swim across the rock as the cave scrolls.
+
+constexpr uint8_t REFLECT_LABEL  = LBL_HYDOR;
+// What reflects is the PLAYER, not the ceiling: the walls are
+// parallel, so a mirrored ceiling is just the floor translated
+// down and reads as a duplicate contour rather than as water.
+constexpr float REFLECT_SQUASH = 0.34f;  // a true mirror sits too deep to associate
+constexpr float REFLECT_RIPPLE = 1.40f;
+constexpr float REFLECT_LEVEL  = 0.60f;
+constexpr float REFLECT_SKIM   = 0.34f;  // without the surface, the double floats
+
 // ---- physics ----------------------------------------------------
 // Scaled by panel height H. THRUST replaces gravity while the
 // button is held; it does not add to it.

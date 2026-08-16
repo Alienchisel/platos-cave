@@ -152,8 +152,22 @@ colour. Both are keyed by name, so the return gets them too.
   Confined to the rock: the passage already has its dither, and stars in it
   would read as noise.
 
-ΥΔΩΡ could mirror the rock edge faintly for reflections. Not done; more work
-than the other two and less certain to read.
+- **ΥΔΩΡ reflects.** The lower rock is a pool; its edge is the surface, with a
+  drifting skim of broken light on it, and the player's double appears mirrored
+  below — sinking as the player climbs.
+
+  **What reflects is the player, not the ceiling**, and that is not an aesthetic
+  choice. The cave's walls are *parallel*: `top` and `bot` are both
+  `centre ± gap/2`, so mirroring the ceiling about the floor yields the floor's
+  own curve translated downward. It reads as a duplicate contour, not as water.
+  The player moves independently of the walls, so its double is unmistakably a
+  reflection.
+
+  The mirror is foreshortened hard (`REFLECT_SQUASH` 0.34). A true mirror puts
+  the double so deep it stops reading as a reflection and starts reading as a
+  second object.
+
+  This is the subtlest of the four flourishes and the least essential.
 
 ### Obstacles
 
@@ -385,7 +399,6 @@ original per-frame guesses and have still never been driven by a human thumb.
 2. **Dither at ΗΛΙΟΣ** — see §4.
 3. **`VIEW_CLOSE`** — see §3a. The most likely constant to be wrong.
 4. **Initials entry scheme** — blocked on button count.
-5. **ΥΔΩΡ reflections** — the one region flourish not attempted.
 
 *Resolved: **stage pacing** — the ascent runs 212.6 s, frame-rate independent
 (§9). **Win condition** — reaching the chains after the return (§3a).

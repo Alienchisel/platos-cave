@@ -102,6 +102,34 @@ def emit() -> str:
              "  // px added per frame of age\n")
     p.append("constexpr uint8_t TRAIL_LEN    = 40;      // points retained\n\n")
 
+    p.append("// ---- region texture ---------------------------------------------\n"
+             "// Three regions name something that behaves, not just something\n"
+             "// coloured. Matched on Region::label, so the return gets them too.\n")
+    p.append(f"constexpr uint8_t FLICKER_LABEL = LBL_"
+             f"{LABELS[label_index(cave.FLICKER_REGION)][0]};"
+             "   // firelight is not steady\n")
+    p.append(f"constexpr float   FLICKER_DEPTH = {cave.FLICKER_DEPTH:.2f}f;"
+             "  // peak swing in light\n")
+    p.append(f"constexpr uint8_t STARS_LABEL   = LBL_"
+             f"{LABELS[label_index(cave.STARS_REGION)][0]};"
+             "   // rock reads as sky by now\n")
+    p.append(f"constexpr uint16_t STAR_RARITY  = {cave.STAR_RARITY};"
+             "    // 1 in N rock pixels\n")
+    p.append("// Stars are placed by WORLD column, not screen column, or they\n"
+             "// swim across the rock as the cave scrolls.\n\n")
+
+    p.append(f"constexpr uint8_t REFLECT_LABEL  = LBL_"
+             f"{LABELS[label_index(cave.REFLECT_REGION)][0]};\n")
+    p.append("// What reflects is the PLAYER, not the ceiling: the walls are\n"
+             "// parallel, so a mirrored ceiling is just the floor translated\n"
+             "// down and reads as a duplicate contour rather than as water.\n")
+    p.append(f"constexpr float REFLECT_SQUASH = {cave.REFLECT_SQUASH:.2f}f;"
+             "  // a true mirror sits too deep to associate\n")
+    p.append(f"constexpr float REFLECT_RIPPLE = {cave.REFLECT_RIPPLE:.2f}f;\n")
+    p.append(f"constexpr float REFLECT_LEVEL  = {cave.REFLECT_LEVEL:.2f}f;\n")
+    p.append(f"constexpr float REFLECT_SKIM   = {cave.REFLECT_SKIM:.2f}f;"
+             "  // without the surface, the double floats\n\n")
+
     p.append("// ---- physics ----------------------------------------------------\n"
              "// Scaled by panel height H. THRUST replaces gravity while the\n"
              "// button is held; it does not add to it.\n"
@@ -155,6 +183,37 @@ def emit() -> str:
     return "".join(p)
 
 
+# Module-level constants in cave.py that deliberately do NOT reach the firmware,
+# because they are Python-side scaffolding or are folded into the region table at
+# bake time. Anything not listed here and not present in the output is reported
+# as unbaked -- the default is "must be exported", which is the safe direction.
+NOT_BAKED = {
+    "W", "H", "PLAYER_X",                      # set by configure(), not fixed
+    "LIGHT_FLOOR",                             # already applied to REGIONS
+    "SPEED_RAMP_END", "GAP_RAMP_END",          # emitted under those names
+}
+
+
+def unbaked(header: str):
+    """Constants defined in cave.py that never made it into the header.
+
+    This has now caught the same mistake three times -- descent constants, trail
+    constants, region-texture constants -- each added to cave.py and silently
+    left out of the export. A comment asking future editors to remember is
+    exactly what failed before, so check it mechanically instead.
+    """
+    missing = []
+    for name, value in vars(cave).items():
+        if not name.isupper() or name.startswith("_"):
+            continue
+        if not isinstance(value, (int, float, bool)):
+            continue
+        if name in NOT_BAKED or name in header:
+            continue
+        missing.append(name)
+    return sorted(missing)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=OUT)
@@ -163,6 +222,13 @@ def main() -> None:
 
     text = emit()
     (args.out / "constants.h").write_text(text, encoding="utf-8")
+
+    gaps = unbaked(text)
+    if gaps:
+        print(f"\n!! {len(gaps)} constant(s) in cave.py never reach the firmware:")
+        for g in gaps:
+            print(f"     {g} = {getattr(cave, g)}")
+        print("   Add them to emit(), or to NOT_BAKED if that is deliberate.")
 
     print(f"{len(cave.REGIONS)} regions "
           f"({len(cave.STAGES)} ascending, "
