@@ -481,7 +481,28 @@ original per-frame guesses and have still never been driven by a human thumb.
 
 ## 10. Open decisions
 
-1. **Death behaviour.** Pure restart is the SFCave contract, and it bites harder
+1. **⚠ Pacing may be far too long — the open question that matters most.**
+   Real play reaches **region 3 of 13**, about 7% of the run. Everything from
+   ΥΔΩΡ onward — the cyan of leaving the cave, the stars, ΠΕΡΙΑΓΩΓΗ, the entire
+   return, ΤΥΦΛΟΣ, ΚΑΤΕΒΗΝ — has never been seen in ordinary play.
+
+   | reach | time | region |
+   | --- | --- | --- |
+   | 1 000 | 0:17 | ΠΥΡ 2/13 |
+   | **2 422** | **0:41** | **ΕΙΔΩΛΑ 3/13** ← observed |
+   | 5 000 | 1:20 | ΥΔΩΡ 4/13 |
+   | 9 900 | 2:25 | ΣΕΛΗΝΗ 6/13 |
+   | 16 000 | 3:32 | ΗΛΙΟΣ 7/13 |
+
+   This was predicted when the pacing was stretched 8× to fix the opposite
+   problem — the note at the time read *"may have overshot the other way"* — and
+   is now confirmed rather than suspected.
+
+   **Do not retune on this data yet.** It predates the drift fix, which took the
+   autopilot from 0/5 to 5/5 and may move a human's reach substantially. Gather
+   post-fix numbers first. If compression is needed, the growth rate between
+   regions (currently 32–50% per stage) is the dial, not the physics.
+2. **Death behaviour.** Pure restart is the SFCave contract, and it bites harder
    now there is 5:46 to lose. Checkpointing at the sun would be merciful and
    would badly undercut the return. *Recommendation: pure restart.*
 2. **Dither at ΗΛΙΟΣ** — see §4.

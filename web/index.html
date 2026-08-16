@@ -57,6 +57,12 @@
     background:var(--panel);border:1px solid var(--rule);border-radius:3px;
     padding:2px 9px;cursor:pointer}
   #tune button:hover{color:var(--text);border-color:var(--dim)}
+  #jump{gap:8px}
+  #jumprow{display:inline-flex;align-items:center;gap:3px}
+  #jumprow .pip{width:11px;height:11px;padding:0;border-radius:2px;
+    border:1px solid #00000060;cursor:pointer}
+  #jumprow .pip:hover{outline:1px solid var(--sun);outline-offset:1px}
+  #jumprow .turn{width:1px;height:13px;background:var(--sun);margin:0 3px}
 
   kbd{background:var(--panel);border:1px solid var(--rule);border-radius:3px;
     padding:1px 6px;color:var(--text);font:inherit;font-size:11px}
@@ -557,8 +563,13 @@ function frame(now) {
       S.state = over ? 'dead' : 'won';
       // Every run counts toward your own best, whether or not it makes the
       // table -- otherwise early progress is invisible until you beat ΘΡΑ.
-      noteRun(S.dist);
-      S.pending = qualifies(S.dist);   // a win always qualifies; it is the max
+      // Except practice runs, which started partway up and did not earn it.
+      if (!S.practice) {
+        noteRun(S.dist);
+        S.pending = qualifies(S.dist); // a win always qualifies; it is the max
+      } else {
+        S.pending = false;
+      }
     }
   }
   draw();
@@ -609,7 +620,32 @@ tuneEl.innerHTML = KNOBS.map(([key, label, lo, hi, step]) =>
   `<label><i>${label}</i>` +
   `<input type=range id="k_${key}" min="${lo}" max="${hi}" step="${step}">` +
   `<output id="o_${key}"></output></label>`).join('') +
-  `<button id=k_reset title="back to the values baked from cave.py">reset</button>`;
+  `<button id=k_reset title="back to the values baked from cave.py">reset</button>` +
+  `<label id=jump><i>start at</i><span id=jumprow></span></label>`;
+
+// Region jump. A tuning build has to let you reach the thing being tuned: at a
+// realistic standard the return is four minutes of flawless play away, which is
+// no way to judge it. Practice runs are excluded from the table and from your
+// best, or starting at 31300 would "win" instantly and poison both.
+const jumpRow = document.getElementById('jumprow');
+jumpRow.innerHTML = REGIONS.map((r, i) =>
+  `<button class=pip data-i="${i}" title="${r.name} — ${r.from}"` +
+  ` style="background:rgb(${r.glow})"></button>` +
+  (i === ASCENT_COUNT - 1 ? '<span class=turn></span>' : '')).join('');
+jumpRow.addEventListener('click', e => {
+  const b = e.target.closest('.pip');
+  if (!b) return;
+  const r = REGIONS[+b.dataset.i];
+  reset();
+  S.dist = r.from + 1;
+  S.practice = +b.dataset.i > 0;
+  // Refill the column buffer at this distance, or the first screen would still
+  // be carrying the opening gap.
+  for (let i = 0; i < W; i++) S.cave.step(S.dist);
+  const [t, bt] = S.cave.bounds(PLAYER_X);
+  S.py = (t + bt) / 2;
+  b.blur();
+});
 
 function hashState() {
   const q = {};
