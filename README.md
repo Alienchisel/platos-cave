@@ -19,7 +19,10 @@ One more borrowing, from the *Phaedrus* rather than the *Republic*: thrust
 against gravity, with you holding the balance, is already the charioteer and his
 two horses. So the trail runs as two strands, whichever is being obeyed leading.
 
-![the seven stages](preview/stage_palette.png)
+![every region, ascending above and returning below](docs/images/descent_regions.png)
+
+*All thirteen regions: the ascent along the top, the return below it. Every one
+dimmer coming down than it was going up.*
 
 ---
 
@@ -27,16 +30,24 @@ two horses. So the trail runs as two strands, whichever is being obeyed leading.
 
 | | |
 | --- | --- |
-| ![title](docs/images/screen_title.png) | ![scores](docs/images/screen_scores.png) |
-| ![game over](docs/images/screen_gameover.png) | ![victory](docs/images/screen_victory.png) |
+| ![title](docs/images/screen_title.png) | ![high scores](docs/images/screen_scores.png) |
+| ![died ascending](docs/images/screen_gameover.png) | ![died returning](docs/images/screen_gameover_return.png) |
+| ![victory](docs/images/screen_victory.png) | |
 
-All four at true 240 × 135. The victory screen reads **ΚΑΤΕΒΗΝ** — *I went down* —
-which is the first word of the *Republic* and, after the return, exactly what you
-have just done.
+All at true 240 × 135, the panel's real resolution.
 
-See also [the seven regions](docs/images/stages_reference.png),
-[ascent versus return](docs/images/descent_regions.png), and
-[the difficulty levers](docs/images/descent_curves.png).
+**ΚΑΤΕΒΗΝ** — *I went down* — is the first word of the *Republic*, and after the
+return it is exactly what you have just done. Death has two words: **ΔΕΣΜΩΤΗΣ**,
+*prisoner*, climbing; **ΤΥΦΛΟΣ**, *blind*, returning, because 516e says the
+returning man's eyes are full of darkness. The pip row under each shows how far
+you got, coloured by each region's own light, with a divider where the sun is.
+
+The high-score table is headed **ΟΙ ΛΥΘΕΝΤΕΣ** — *those who were released* — and
+seeded so the ordering carries a joke: the Neoplatonists above the *Republic*'s
+cast, because the cast were never released. They only heard it described.
+
+See also [the seven ascent regions in detail](docs/images/stages_reference.png)
+and [the difficulty levers across a full run](docs/images/descent_curves.png).
 
 ## Status
 
@@ -47,10 +58,15 @@ the visuals are settled and the feel is entirely unknown.
 | | |
 | --- | --- |
 | Target | M5Stack **M5StickS3**, 240 × 135 landscape — *not yet purchased* |
-| Visuals | prototyped and rendered |
-| Pacing | retuned, frame-rate independent, verified 30–144 fps |
+| Visuals | prototyped and rendered at true panel resolution |
+| Ascent and return | modelled end to end, 5 min 46 s |
+| Pacing | frame-rate independent, verified 30–144 fps |
+| Assets | baked to C headers, round-trip verified |
 | Physics feel | **never tested** — three constants awaiting a thumb |
 | Firmware | not started |
+
+Two things gate the firmware and both need the board in hand: **how many
+programmable buttons the StickS3 actually has**, and the three physics constants.
 
 ---
 
@@ -59,7 +75,7 @@ the visuals are settled and the feel is entirely unknown.
 | Doc | Contents |
 | --- | --- |
 | [docs/HARDWARE.md](docs/HARDWARE.md) | What to buy and why. Confirmed specs, unverified items, and a record of the four devices considered and rejected. |
-| [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) | Rules, the seven stages, palette, pacing curve, open decisions. |
+| [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) | Rules, the thirteen regions, the return, palette, pacing curve, open decisions. |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Launcher-plus-modules structure, the input abstraction, build order. |
 | [docs/ARCHIVE_POINTCLOUD.md](docs/ARCHIVE_POINTCLOUD.md) | The abandoned first direction, kept for its findings. |
 
@@ -71,20 +87,21 @@ input design and the high-score entry screen.
 
 ## Tools
 
-All prototypes. Only the asset bakers — *not yet written* — will feed the
-firmware.
+**The bakers feed the firmware. Everything else is design work.**
 
 | | |
 | --- | --- |
 | `tools/cave.py` | The game. Simulates a run and renders it. **The reference implementation**: the C++ must match its math. |
+| `tools/bake_assets.py` | Images and Greek text → 1-bit C headers. |
+| `tools/bake_constants.py` | `cave.py` → `constants.h`. Also reports any constant that never reached the firmware. |
+| `tools/verify_bake.py` | Parses the generated C back out and checks it. There is no compiler here, so nothing else would catch malformed output. |
+| `tools/mockups.py` | The non-gameplay screens — title, high scores, both deaths, victory — at true 240 × 135. |
 | `tools/stage_sheet.py` | Reference sheet of the seven ascent regions with palettes, hex values and per-stage difficulty numbers. |
-| `tools/model_descent.py` | The full run including the return: difficulty curves across all three levers, and every region shown ascending and returning. |
-| `tools/image_treatments.py` | Renders a source image twelve ways at panel resolution — dithers, halftone, engraving, duotones. |
-| `tools/preview.py` | 3D point-cloud renderer. Archived direction. |
-| `tools/sample_points.py` | Mesh → point cloud → C header. Archived direction. |
-| `tools/isolate_head.py` | Cuts a subject off a photographed background onto black, by largest connected component. Works when the subject is clearly brighter than the background; not when their tonal ranges overlap. |
-| `tools/mockups.py` | The non-gameplay screens — title, high scores, game over, victory — at true 240×135. |
+| `tools/model_descent.py` | The full run including the return: difficulty curves across all three levers, and every region ascending and returning. |
 | `tools/imgutil.py` | Palette-PNG saving for the committed reference images. |
+| `tools/image_treatments.py` | Twelve treatments of a source image. Also supplies `prepare()`, which the bakers depend on. |
+| `tools/isolate_head.py` | Cuts a subject off a photographed background onto black. Works when the subject is clearly brighter than the background; not when their tonal ranges overlap. |
+| `tools/preview.py` · `sample_points.py` · `make_test_mesh.py` | The archived point-cloud direction. |
 
 ### Running it
 
@@ -92,17 +109,27 @@ firmware.
 python tools/cave.py --seconds 225 --fps 24 --scale 2
 ```
 
-Writes a gameplay GIF, a title screen, and a one-frame-per-stage contact sheet to
+Simulates a full ascent, writes a gameplay GIF and a per-region contact sheet to
 `preview/`, and prints the stage timings.
 
 ```bash
-python tools/image_treatments.py image/plato.png
+python tools/bake_assets.py && python tools/bake_constants.py && python tools/verify_bake.py
 ```
 
-Twelve treatments at 128 × 128 to `preview/treatments/`.
+Regenerates everything under `firmware/plato/assets/` and checks it round-trips.
+Deterministic — re-running produces byte-identical headers.
 
-Requires `numpy`, `pillow`, and — for the archived 3D tools — `trimesh`,
-`scipy`, `networkx`.
+```bash
+python tools/model_descent.py
+python tools/mockups.py
+python tools/stage_sheet.py
+```
+
+Regenerate the committed reference images in `docs/images/`.
+
+Requires `numpy` and `pillow`. The archived point-cloud tools additionally need
+`trimesh`, `scipy` and `networkx`. Rendering `image/plato.png` is not in the
+repository; the baked assets derived from it are.
 
 ---
 
@@ -120,7 +147,9 @@ Greek UI came from, before the rotating head was dropped in favour of treating a
 still photograph.
 
 It is now a **game**, which is the first version that gives the device a reason
-to be picked up rather than glanced at.
+to be picked up rather than glanced at. It was endless until the *Republic*
+pointed out that the ascent has an ending and the descent is the hard part, at
+which point it became winnable.
 
 The target board changed too, once it emerged that the T-QT Pro has no battery
 socket, a case that physically cannot contain a battery, and no speaker.
