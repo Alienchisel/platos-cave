@@ -75,6 +75,18 @@ node tools/test_web.js       # check the web build against the Python model
 against `cave.py`, at 30 / 50 / 72 / 144 fps. Generated constants keep the
 numbers in step; this checks the behaviour is too.
 
+**Pin the terrain when comparing tunings.** Append `#seed=42` (or `?seed=42`)
+and every run replays the same cave. Without it, "that felt better" may only
+mean the generator dealt an easier tunnel. The seed of the current run is always
+shown under the canvas and is a link that pins it, so a run worth repeating can
+be repeated.
+
+The tunnel is procedurally generated per run, but only the *route* is random —
+the gap is a pure function of distance, identical every time, so the difficulty
+curve never varies and scores stay comparable. The noise is applied to the
+passage's rate of change rather than its position, damped and clamped, which is
+why it undulates rather than jitters.
+
 It also reports a difficulty reading. A lookahead autopilot — a rough proxy for
 a good human — averages **81% of the distance and completes 0 of 5 runs**, dying
 in the return with the view closing. Read that as a hint that `VIEW_CLOSE` may
