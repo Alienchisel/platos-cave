@@ -101,6 +101,10 @@ to slow-motion instead, which is survivable and honest.
   tearing.
 - The cave renderer stays a **1-bit dither with a per-stage palette lookup** —
   three colours per stage, so colour costs nothing over monochrome.
+- **The trail needs line drawing, not point plotting.** This is the one place the
+  renderer cannot be point-wise: isolated pixels disappear into the dither. See
+  GAME_DESIGN §4 — the constraint is baked into `constants.h` alongside the
+  trail tuning so it cannot be missed at implementation time.
 
 ---
 

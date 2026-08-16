@@ -15,6 +15,10 @@ down, and his eyes no longer work in the dark. **You win by returning to the
 chains** — through the same seven regions, each dimmer than it was on the way up,
 with the view closing in. Roughly 5½ minutes of unbroken flight.
 
+One more borrowing, from the *Phaedrus* rather than the *Republic*: thrust
+against gravity, with you holding the balance, is already the charioteer and his
+two horses. So the trail runs as two strands, whichever is being obeyed leading.
+
 ![the seven stages](preview/stage_palette.png)
 
 ---

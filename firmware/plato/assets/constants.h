@@ -35,6 +35,24 @@ constexpr float WIN_DIST       = 33000.0f;   // reaching this completes the game
 constexpr float VIEW_CLOSE = 0.55f;   // fraction of width swallowed
 constexpr float VIEW_DEPTH = 0.92f;   // dimming at the right edge
 
+// ---- trail ------------------------------------------------------
+// Two constraints the firmware must honour or the trail vanishes:
+//
+//  1. Draw it as CONNECTED SEGMENTS, not isolated points. A single
+//     pixel cannot compete with a single-pixel dither -- in a
+//     50-80% lit field it is just another dither cell.
+//  2. Flip its polarity on the region's light. Brighter than the
+//     passage below 128/255, darker above; a trail that only
+//     brightens is invisible from SELENE onward.
+//
+// TWIN_TRAIL draws two strands rather than one: the Phaedrus
+// chariot's two horses, whichever is being obeyed leading. Set 0
+// for a single strand.
+constexpr uint8_t TWIN_TRAIL   = 1;
+constexpr float   TRAIL_BASE   = 1.40f;  // px of divergence at the player
+constexpr float   TRAIL_SPREAD = 0.10f;  // px added per frame of age
+constexpr uint8_t TRAIL_LEN    = 40;      // points retained
+
 // ---- physics ----------------------------------------------------
 // Scaled by panel height H. THRUST replaces gravity while the
 // button is held; it does not add to it.
