@@ -210,7 +210,7 @@ function reset(seed) {
   const s = seed ?? URL_SEED ?? (Math.random() * 1e9 | 0);
   S = { seed: s, cave: new Cave(s),
         py: H / 2, vy: 0, dist: 0, acc: 0, trail: [],
-        banner: null, flashT: 0, t: 0, state: 'ready', best: loadBest() };
+        banner: null, flashT: 0, t: 0, state: 'ready', best: loadMyBest() };
 }
 // ΟΙ ΛΥΘΕΝΤΕΣ -- "those who were released". Seeded with the Neoplatonists above
 // the Republic's cast, because the cast were never released: they sat in a house
@@ -231,14 +231,27 @@ function loadScores() {
   return DEFAULT_SCORES.map(([ini, dist]) => ({ ini, dist }));
 }
 function saveScores(t) { localStorage.setItem('pc_scores', JSON.stringify(t)); }
-function loadBest() { return Math.round(loadScores()[0]?.dist || 0); }
+
+// The player's own best, tracked apart from the table. Reporting the table's
+// top as "best" showed Plotinus's seeded 33000 next to your own run, which
+// reads as a personal best and is not one.
+function loadMyBest() { return +(localStorage.getItem('pc_mybest') || 0); }
+function noteRun(d) {
+  if (Math.round(d) > loadMyBest()) localStorage.setItem('pc_mybest', Math.round(d));
+}
+// The lowest entry still above you: the next name to beat.
+function nextAbove(d) {
+  return loadScores().filter(r => r.dist > d).sort((a, b) => a.dist - b.dist)[0] || null;
+}
 function qualifies(d) {
   const t = loadScores();
   return t.length < TABLE_LEN || d > t[t.length - 1].dist;
 }
 function commitScore(ini, dist) {
   const t = loadScores();
-  t.push({ ini, dist: Math.round(dist) });
+  // `mine` survives the session, so you can still pick yourself out of the
+  // Neoplatonists next time you open the page.
+  t.push({ ini, dist: Math.round(dist), mine: true });
   t.sort((a, b) => b.dist - a.dist);
   saveScores(t.slice(0, TABLE_LEN));
 }
@@ -427,11 +440,13 @@ function scoresCard() {
   g.font = '10px ui-monospace,Consolas,monospace';
   table.slice(0, TABLE_LEN).forEach((row, i) => {
     const y = 21 + i * 13;
-    const mine = Math.round(row.dist) === Math.round(S.dist) && S.justPlaced;
+    const justNow = row.mine && Math.round(row.dist) === Math.round(S.dist);
     const won = row.dist >= WIN_DIST;
-    const col = mine ? '#ec7424' : won ? '#fff6d6' : (i < 3 ? '#d7d7d7' : '#969696');
+    const col = justNow ? '#ec7424' : row.mine ? '#f0a460'
+              : won ? '#fff6d6' : (i < 3 ? '#d7d7d7' : '#969696');
     g.textAlign = 'left';
-    g.fillStyle = '#69697a'; g.fillText(String(i + 1), 10, y);
+    g.fillStyle = justNow ? '#ec7424' : '#69697a';
+    g.fillText(justNow ? '>' : String(i + 1), 10, y);
     g.fillStyle = col; g.fillText(row.ini, 26, y);
     g.textAlign = 'right';
     g.fillText(String(Math.round(row.dist)), 120, y);
@@ -533,8 +548,10 @@ function frame(now) {
     const over = S.py < top || S.py > bot;
     if (over || S.dist >= WIN_DIST) {
       S.state = over ? 'dead' : 'won';
+      // Every run counts toward your own best, whether or not it makes the
+      // table -- otherwise early progress is invisible until you beat ΘΡΑ.
+      noteRun(S.dist);
       S.pending = qualifies(S.dist);   // a win always qualifies; it is the max
-      S.justPlaced = S.pending;
     }
   }
   draw();
@@ -551,6 +568,9 @@ function hud() {
   }
   const i = regionIndex(S.dist), r = REGIONS[i];
   const mm = Math.floor(S.t / 60), ss = Math.floor(S.t % 60);
+  // Measured against the best you have actually managed, not the current run,
+  // so the target holds still while you are flying.
+  const nextUp = nextAbove(loadMyBest());
   // The seed is always shown, not just when pinned: a run that felt worth
   // repeating is worth being able to repeat.
   const seedCell = URL_SEED === null
@@ -560,7 +580,8 @@ function hud() {
     `<span><kbd>space</kbd> / tap to thrust</span>` +
     `<span class=live>${i >= ASCENT_COUNT ? '↓' : ''}${r.name} <b>${i + 1}</b>/${REGIONS.length}</span>` +
     `<span>${mm}:${String(ss).padStart(2, '0')}</span>` +
-    `<span>best <b>${loadBest()}</b></span>` +
+    `<span>your best <b>${loadMyBest() || '—'}</b></span>` +
+    (nextUp ? `<span>next <b>${nextUp.ini}</b> ${Math.round(nextUp.dist)}</span>` : '') +
     `<span>${seedCell}</span>` +
     `<span>${fpsShown} fps</span>`;
 }

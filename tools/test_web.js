@@ -67,6 +67,7 @@ globalThis.__t = {
   setHeld(v) { held = v; }, setLast(v) { last = v; },
   noDraw() { draw = () => {}; hud = () => {}; },
   release, loadScores, saveScores, qualifies, commitScore,
+  loadMyBest, noteRun, nextAbove,
   REGIONS, WIN_DIST, DESCENT_START, ASCENT_COUNT, PLAYER_X, W, H,
   TABLE_LEN, ALPHABET, LONG_MS,
 };`, sandbox);
@@ -202,6 +203,23 @@ ok(after.every((r, i) => i === 0 || after[i - 1].dist >= r.dist),
 store['pc_scores'] = '{not json';
 ok(T.loadScores().length === T.TABLE_LEN, 'corrupt storage falls back to defaults');
 delete store['pc_scores'];
+
+// Personal best is separate from the table's top. Conflating them showed the
+// seeded ΠΛΩ 33000 as though the player had scored it.
+console.log('\npersonal best:');
+delete store['pc_mybest'];
+ok(T.loadMyBest() === 0, 'a player who has never run has no best');
+ok(T.loadScores()[0].dist === 33000, 'the table top is still ΠΛΩ 33000');
+T.noteRun(988);
+ok(T.loadMyBest() === 988, `a run below the table still counts (${T.loadMyBest()})`);
+T.noteRun(400);
+ok(T.loadMyBest() === 988, 'a worse run does not lower it');
+T.noteRun(1500);
+ok(T.loadMyBest() === 1500, 'a better run raises it');
+const nxt = T.nextAbove(1500);
+ok(nxt && nxt.ini === 'ΓΛΑ', `next target above 1500 is ΓΛΑ (${nxt && nxt.ini})`);
+ok(T.nextAbove(99999) === null, 'nothing is above a maximal run');
+delete store['pc_mybest'];
 
 // 6. One-button initials entry: tap steps a letter, hold commits it.
 console.log('\none-button initials entry:');
