@@ -31,6 +31,10 @@
     font-variant-numeric:tabular-nums}
   #hud b{color:var(--text);font-weight:600}
   #hud .live{color:var(--fire)}
+  #hud a{color:inherit;text-decoration:none;border-bottom:1px dotted #333944}
+  #hud a:hover,#hud a:focus-visible{color:var(--text);border-bottom-color:var(--dim)}
+  #hud a.pinned{color:var(--sun);border-bottom-color:#4a4636}
+  :focus-visible{outline:1px solid var(--sun);outline-offset:2px}
 
   /* The constants actually under test. This is a tuning rig, so "it feels
      floaty" is only useful next to the number that makes it so. */
@@ -166,6 +170,16 @@ class Cave {
 }
 
 // ------------------------------------------------------------- game session
+// A pinned seed replays the same terrain every run, which is the only way to
+// compare two tunings honestly: otherwise a change that "felt better" may just
+// have drawn an easier cave. Accepts #seed=42 or ?seed=42 -- the hash first,
+// because it is purely client-side and survives hosts that strip query strings.
+const URL_SEED = (() => {
+  if (typeof location === 'undefined') return null;
+  const m = (location.hash + location.search).match(/seed=(-?\d+)/);
+  return m ? (+m[1] | 0) : null;
+})();
+
 let S = null;
 function reset(seed) {
   // Starts 'ready', not 'play'. From a standing start the opening gap gives
@@ -173,7 +187,8 @@ function reset(seed) {
   // 250 ms -- so a run that begins the instant it loads is already lost. The
   // player holds at the centre until they press, and that press is also the
   // first thrust.
-  S = { cave: new Cave(seed || (Math.random() * 1e9 | 0)),
+  const s = seed ?? URL_SEED ?? (Math.random() * 1e9 | 0);
+  S = { seed: s, cave: new Cave(s),
         py: H / 2, vy: 0, dist: 0, acc: 0, trail: [],
         banner: null, flashT: 0, t: 0, state: 'ready', best: loadBest() };
 }
@@ -510,13 +525,21 @@ function hud() {
   }
   const i = regionIndex(S.dist), r = REGIONS[i];
   const mm = Math.floor(S.t / 60), ss = Math.floor(S.t % 60);
+  // The seed is always shown, not just when pinned: a run that felt worth
+  // repeating is worth being able to repeat.
+  const seedCell = URL_SEED === null
+    ? `<a href="#seed=${S.seed}" title="pin this cave and reload">seed ${S.seed}</a>`
+    : `<a href="#" class=pinned title="back to random caves">seed <b>${S.seed}</b> pinned</a>`;
   hudEl.innerHTML =
     `<span><kbd>space</kbd> / tap to thrust</span>` +
     `<span class=live>${i >= ASCENT_COUNT ? '↓' : ''}${r.name} <b>${i + 1}</b>/${REGIONS.length}</span>` +
     `<span>${mm}:${String(ss).padStart(2, '0')}</span>` +
     `<span>best <b>${loadBest()}</b></span>` +
+    `<span>${seedCell}</span>` +
     `<span>${fpsShown} fps</span>`;
 }
+// Changing the hash does not reload on its own, and the seed is read once.
+addEventListener('hashchange', () => location.reload());
 
 // The four constants the hardware build cannot yet answer for. Shown because
 // this page exists to judge them, and "too floaty" is only actionable beside

@@ -146,7 +146,33 @@ let died = false;
 for (let i = 1; i <= 900 && !died; i++) { T.setHeld(false); T.frame(i * 1000 / 60); died = T.S.state === 'dead'; }
 ok(died, 'falling with no thrust dies');
 
-// 5. The score table. Bugs here silently lose the player's runs.
+// 5. Seeding. The whole point of ?seed= is that a tuning change can be judged
+//    on identical terrain, which is worthless if seeds do not actually repeat.
+console.log('\nseeding:');
+const shape = (seed) => {
+  T.reset(seed); T.setLast(0); T.press();
+  const out = [];
+  for (let i = 1; i <= 400; i++) {
+    const S = T.S;
+    const [t, b] = S.cave.bounds(T.PLAYER_X);
+    T.setHeld(S.py > (t + b) / 2 - 2);
+    T.frame(i * 20);
+    if (T.S.state === 'dead') {
+      const [a, c] = T.S.cave.bounds(T.PLAYER_X);
+      T.S.py = (a + c) / 2; T.S.vy = 0; T.S.state = 'play';
+    }
+    if (i % 80 === 0) out.push(Math.round(T.S.cave.cols[T.W - 1][0]));
+  }
+  return out.join(',');
+};
+ok(shape(42) === shape(42), 'the same seed reproduces the same terrain');
+ok(shape(42) !== shape(43), 'different seeds give different terrain');
+T.reset(7); const s7 = T.S.seed;
+ok(s7 === 7, `the run records its seed (${s7})`);
+T.reset(); const r1 = T.S.seed; T.reset(); const r2 = T.S.seed;
+ok(r1 !== r2, 'an unseeded run picks a fresh cave each time');
+
+// 6. The score table. Bugs here silently lose the player's runs.
 console.log('\nhigh-score table:');
 delete store['pc_scores'];
 const defaults = T.loadScores();
