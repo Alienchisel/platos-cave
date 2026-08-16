@@ -1,0 +1,51 @@
+# Publishes web/ as the Pages site, so web/index.html is the site root.
+#
+# Deployed straight from web/ rather than copied into docs/: a second copy of
+# the game is a second thing to drift, and this repo already treats cave.py as
+# the single source the other builds derive from.
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'tools/test_web.js'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; queue instead of cancelling, so the last push wins
+# rather than an interrupted one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The only automated gate this project has. It checks the page against the
+      # Python model's timings at four frame rates and runs the real renderer in
+      # every screen state, so a broken build fails here instead of shipping.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Check the build against the reference model
+        run: node tools/test_web.js
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deploy
+        uses: actions/deploy-pages@v4
