@@ -70,8 +70,8 @@ constexpr uint16_t STAR_RARITY  = 1400;    // 1 in N rock pixels
 // Scaled by panel height H. THRUST replaces gravity while the
 // button is held; it does not add to it.
 // UNVALIDATED: these three have never been driven by a human thumb.
-constexpr float GRAVITY = 7.80f;   // * H px/s^2
-constexpr float THRUST  = -9.60f;   // * H px/s^2
+constexpr float GRAVITY = 6.90f;   // * H px/s^2
+constexpr float THRUST  = -8.50f;   // * H px/s^2
 constexpr float VY_MAX  = 1.26f;   // * H px/s
 
 // ---- cave shape -------------------------------------------------

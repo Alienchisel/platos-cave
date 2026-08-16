@@ -87,8 +87,12 @@ GAP_RAMP_END = 12000                   # distance at which GAP_MIN is reached
 
 # Physics, scaled by H so the feel survives a change of panel. Thrust replaces
 # gravity while held, it does not add to it.
-GRAVITY = 7.8       # * H  px/s^2, downward
-THRUST = -9.6       # * H  px/s^2, while the button is held
+# Lightened ~12% from 7.8 / -9.6 on playtest feedback ("a little bit too
+# heavy"), holding the thrust:gravity ratio at 1.23 so the balance is unchanged
+# and only the weight moves. Time to fall the opening gap goes 248 -> 264 ms and
+# reversing a full-speed dive goes 131 -> 148 ms.
+GRAVITY = 6.9       # * H  px/s^2, downward
+THRUST = -8.5       # * H  px/s^2, while the button is held
 VY_MAX = 1.26       # * H  px/s
 
 

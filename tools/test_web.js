@@ -37,12 +37,20 @@ const el = () => ({
   getContext: () => ctx2d, addEventListener: noop,
   set width(v) {}, get width() { return 240; },
   set height(v) {}, get height() { return 135; },
-  set innerHTML(v) {},
+  set innerHTML(v) {}, set textContent(v) {}, set value(v) {}, get value() { return 0; },
+  classList: { toggle: noop, add: noop, remove: noop },
+  closest: () => null, blur: noop, focus: noop,
 });
 const store = {};
 const sandbox = {
   document: { getElementById: el, createElement: el },
   localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => store[k] = String(v) },
+  // The page reads the hash for a pinned seed and a saved tuning, and writes it
+  // back through replaceState. Stub both rather than making the page defend
+  // against an environment that only this harness creates.
+  location: { hash: '', search: '', pathname: '/', reload: noop },
+  history: { replaceState: noop },
+  Element: function Element() {},
   addEventListener: noop, requestAnimationFrame: noop,
   // Controllable clock: the one-button initials scheme distinguishes a tap from
   // a hold by duration, so the harness has to be able to move time.
