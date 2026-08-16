@@ -58,8 +58,14 @@ and [the difficulty levers across a full run](docs/images/descent_curves.png).
 
 ## Play it
 
+**▶ [alienchisel.github.io/platos-cave](https://alienchisel.github.io/platos-cave/)**
+— space or tap to thrust. Hold to climb, release to fall; that is the whole
+control scheme.
+
 `web/index.html` is a self-contained playable build — the same game, running the
-same constants, so tuning done there transfers to the firmware.
+same constants, so tuning done there transfers to the firmware. It is what the
+link above serves, deployed straight from `web/` rather than copied, because a
+second copy of the game is a second thing to drift.
 
 It exists because **the three physics constants had never met a thumb**, and they
 were the design decisions most likely to be wrong. The page shows those four
@@ -222,6 +228,16 @@ which point it became winnable.
 
 The target board changed too, once it emerged that the T-QT Pro has no battery
 socket, a case that physically cannot contain a battery, and no speaker.
+
+---
+
+## License
+
+Code, documentation and the generated assets: **MIT** — see [LICENSE](LICENSE).
+
+One exception, and it is not mine to relicense: `firmware/plato_tqt/plato_points.h`
+is sampled from the CC BY 4.0 scan credited below, so that file carries CC BY 4.0
+and its attribution travels with it.
 
 ---
 
