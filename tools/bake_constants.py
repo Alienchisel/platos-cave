@@ -118,17 +118,8 @@ def emit() -> str:
     p.append("// Stars are placed by WORLD column, not screen column, or they\n"
              "// swim across the rock as the cave scrolls.\n\n")
 
-    p.append(f"constexpr uint8_t REFLECT_LABEL  = LBL_"
-             f"{LABELS[label_index(cave.REFLECT_REGION)][0]};\n")
-    p.append("// What reflects is the PLAYER, not the ceiling: the walls are\n"
-             "// parallel, so a mirrored ceiling is just the floor translated\n"
-             "// down and reads as a duplicate contour rather than as water.\n")
-    p.append(f"constexpr float REFLECT_SQUASH = {cave.REFLECT_SQUASH:.2f}f;"
-             "  // a true mirror sits too deep to associate\n")
-    p.append(f"constexpr float REFLECT_RIPPLE = {cave.REFLECT_RIPPLE:.2f}f;\n")
-    p.append(f"constexpr float REFLECT_LEVEL  = {cave.REFLECT_LEVEL:.2f}f;\n")
-    p.append(f"constexpr float REFLECT_SKIM   = {cave.REFLECT_SKIM:.2f}f;"
-             "  // without the surface, the double floats\n\n")
+    p.append("// HYDOR has no special texture. A reflection was built and\n"
+             "// rejected; see GAME_DESIGN.\n\n")
 
     p.append("// ---- physics ----------------------------------------------------\n"
              "// Scaled by panel height H. THRUST replaces gravity while the\n"
