@@ -56,6 +56,30 @@ cast, because the cast were never released. They only heard it described.
 See also [the seven ascent regions in detail](docs/images/stages_reference.png)
 and [the difficulty levers across a full run](docs/images/descent_curves.png).
 
+## Play it
+
+`web/index.html` is a self-contained playable build — the same game, running the
+same constants, so tuning done there transfers to the firmware.
+
+It exists for one reason: **the three physics constants and `VIEW_CLOSE` have
+never met a thumb**, and they are the design decisions most likely to be wrong.
+The page shows those four values under the canvas, so "it feels floaty" arrives
+attached to the number that causes it.
+
+```bash
+python tools/bake_web.py     # re-export cave.py's constants into the page
+node tools/test_web.js       # check the web build against the Python model
+```
+
+`test_web.js` runs the game headlessly and compares all thirteen region timings
+against `cave.py`, at 30 / 50 / 72 / 144 fps. Generated constants keep the
+numbers in step; this checks the behaviour is too.
+
+It also reports a difficulty reading. A lookahead autopilot — a rough proxy for
+a good human — averages **81% of the distance and completes 0 of 5 runs**, dying
+in the return with the view closing. Read that as a hint that `VIEW_CLOSE` may
+be past fair, not as proof: an autopilot is not a player.
+
 ## Status
 
 **Nothing has been built.** No firmware is written and the hardware has not been
@@ -104,6 +128,8 @@ input design and the high-score entry screen.
 | `tools/verify_bake.py` | Parses the generated C back out and checks it. There is no compiler here, so nothing else would catch malformed output. |
 | `tools/mockups.py` | The non-gameplay screens — title, high scores, both deaths, victory — at true 240 × 135. |
 | `tools/readme_gif.py` | The gameplay loop above. Sized against a byte budget, since it is committed. |
+| `tools/bake_web.py` | `cave.py` → the constants block in `web/index.html`. |
+| `tools/test_web.js` | Runs the web build headlessly and checks it against the Python model. |
 | `tools/stage_sheet.py` | Reference sheet of the seven ascent regions with palettes, hex values and per-stage difficulty numbers. |
 | `tools/model_descent.py` | The full run including the return: difficulty curves across all three levers, and every region ascending and returning. |
 | `tools/imgutil.py` | Palette-PNG saving for the committed reference images. |
