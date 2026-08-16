@@ -409,6 +409,45 @@ The first pass accumulated distance per *frame*. That put the sun at ~25 s on a
 different on every build. Verified fixed: stage timings across **30, 50, 70, 90
 and 144 fps agree to 0.00%**.
 
+### Difficulty steps per region
+
+Each region sets its **own** gap and scroll rate, eased in over `STEP_SPAN`
+(120 distance, ~1.7 s) at the boundary. A region change is therefore a felt
+mechanical event, not only a change of palette.
+
+| region | gap | scroll | warning |
+| --- | --- | --- | --- |
+| ΣΚΙΑΙ | 64.8 px | 55 col/s | 3.62 s |
+| ΠΥΡ | 56.7 | 66 | 3.02 |
+| ΕΙΔΩΛΑ | 50.0 | 76 | 2.62 |
+| ΥΔΩΡ | 44.6 | 84 | 2.37 |
+| ΑΣΤΡΑ | 39.1 | 91 | 2.19 |
+| ΣΕΛΗΝΗ | 35.1 | 97 | 2.05 |
+| ΗΛΙΟΣ | 31.1 | 103 | 1.93 |
+| ΣΕΛΗΝΗ ↓ | 29.0 | 110 | 1.81 |
+| ΑΣΤΡΑ ↓ | 27.0 | 117 | 1.70 |
+| ΥΔΩΡ ↓ | 25.0 | 124 | 1.60 |
+| ΕΙΔΩΛΑ ↓ | 23.0 | 131 | 1.52 |
+| ΠΥΡ ↓ | 21.6 | 138 | 1.44 |
+| ΣΚΙΑΙ ↓ | 20.2 | 145 | 1.37 |
+
+**Why this replaced continuous ramps.** Under the old scheme a typical run met
+**17% of the narrowing and 8% of the acceleration** before it ended — the whole
+escalation lived past where anyone actually played, and regions were colours
+rather than difficulties. The same run now meets **33% and 23%**, and more
+importantly the *first* boundary at 12.7 s is a real event: 64.8 → 56.7 px and
+55 → 66 col/s, cutting the warning from 3.62 s to 3.02 s.
+
+The table is **front-loaded** deliberately. Real play ends around region 3, so
+the early steps must carry a meaningful share of the range or the curve still
+never participates. Endpoints are unchanged (0.48 H → 0.15 H, 55 → 145 col/s);
+only their distribution moved.
+
+Steps **ease** rather than snap. Instant would be unfair as well as jarring — the
+passage could narrow around a player already committed to a line.
+
+*This does not make the game easier. It makes the difficulty arrive.*
+
 ### Two difficulty levers
 
 | | Start | At the sun |

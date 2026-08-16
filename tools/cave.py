@@ -80,10 +80,27 @@ STAGES = [("ΣΚΙΑΙ",     0, 0.14, (6, 7, 11),   (78, 88, 104)),    # shadows
 # the passage narrows, and the scroll accelerates -- the latter shrinks forward
 # view measured in *time*, from ~3.6 s of warning at the start to ~2.0 s at the
 # sun, which is the reaction budget that actually governs difficulty.
-SPEED_START, SPEED_END = 55.0, 100.0   # columns/second
-SPEED_RAMP_END = 16000                 # distance at which SPEED_END is reached
-GAP_START, GAP_MIN = 0.48, 0.21        # as a fraction of H
-GAP_RAMP_END = 12000                   # distance at which GAP_MIN is reached
+# Difficulty steps per region rather than ramping continuously over the whole
+# run. Under the old continuous ramps a typical run met 17% of the narrowing and
+# 8% of the acceleration before it ended: the regions were colours, not
+# difficulties, and the escalation lived past where anyone actually played.
+#
+# Front-loaded on purpose. Real play ends around region 3, so the early steps
+# have to carry a meaningful share of the range or the curve still never
+# participates. Endpoints are unchanged -- 0.48H to 0.15H, 55 to 145 col/s --
+# only their distribution has moved.
+#                 ------------- ascent -------------  ------ return ------
+REGION_GAP =   (0.48, 0.42, 0.37, 0.33, 0.29, 0.26, 0.23,
+                0.215, 0.20, 0.185, 0.17, 0.16, 0.15)     # fraction of H
+REGION_SPEED = (55.0, 66.0, 76.0, 84.0, 91.0, 97.0, 103.0,
+                110.0, 117.0, 124.0, 131.0, 138.0, 145.0)  # columns/second
+
+# A step eases in over this distance rather than snapping. Instant would be both
+# jarring and unfair -- the passage could narrow around a player already
+# committed to a line. ~1.7s at mid-run speeds: an event, not a wall.
+STEP_SPAN = 120
+
+SPEED_START = REGION_SPEED[0]          # the drift scaling references this
 
 # How far the passage wanders, per column. Scaled by SPEED_START/speed in
 # Cave.step so the wander stays constant in px/second as the scroll accelerates.
@@ -113,9 +130,7 @@ VY_MAX = 1.00       # * H  px/s
 # and the speed caps at 16000. Repeating the ascent would be strictly easier,
 # because you would already know it.
 SUN_HOLD = 3000                     # distance held at the sun before turning back
-DESCENT_START = SPEED_RAMP_END + SUN_HOLD
-SPEED_DESC_END = 145.0              # columns/second by the time you reach the chains
-GAP_DESC_MIN = 0.15                 # below ~0.13 it stops being difficulty
+DESCENT_START = 19000               # where ΗΛΙΟΣ ends and the return begins
 WIN_DIST = 33000
 
 # (index into STAGES, distance it begins, how far the dazzled eye falls short of
@@ -212,22 +227,35 @@ def descent_progress(dist):
     return min(1.0, (dist - DESCENT_START) / (WIN_DIST - DESCENT_START))
 
 
+def region_index(dist):
+    """Index into REGIONS for a given distance."""
+    i = 0
+    for n, r in enumerate(REGIONS):
+        if dist >= r[1]:
+            i = n
+    return i
+
+
+def _stepped(table, dist):
+    """Value from a per-region table, eased in over STEP_SPAN at the boundary."""
+    i = region_index(dist)
+    if i == 0:
+        return table[0]
+    t = min(1.0, (dist - REGIONS[i][1]) / STEP_SPAN)
+    return table[i - 1] + (table[i] - table[i - 1]) * t
+
+
 def speed_at(dist):
-    """Scroll rate in columns/second. Climbs on the ascent, holds across the sun,
-    then climbs again -- speed is the primary descent lever because the gap has
-    a hard floor and reaction time does not."""
-    if dist <= SPEED_RAMP_END:
-        return SPEED_START + (SPEED_END - SPEED_START) * (dist / SPEED_RAMP_END)
-    return SPEED_END + (SPEED_DESC_END - SPEED_END) * descent_progress(dist)
+    """Scroll rate in columns/second, stepped per region. Speed is the sharper
+    lever of the two: the gap has a hard floor near the player's own height,
+    reaction time does not."""
+    return _stepped(REGION_SPEED, dist)
 
 
 def gap_at(dist):
     """Passage height in pixels. A pure function of distance, so it cannot drift
     with frame rate the way an incremental shrink did."""
-    t = min(1.0, dist / GAP_RAMP_END)
-    gap = GAP_START - (GAP_START - GAP_MIN) * t
-    gap -= (GAP_MIN - GAP_DESC_MIN) * descent_progress(dist)
-    return H * gap
+    return H * _stepped(REGION_GAP, dist)
 
 
 # Plain-English gloss per stage. Kept out of STAGES so bake_constants.py, which
@@ -492,10 +520,14 @@ def simulate(seed, seconds, fps=50, render=True, render_at=None):
 
         name = stage_for(dist)[0]
         turned = (dist >= DESCENT_START > dist - advance)
+        # Log the transition before deciding the banner. The turn lands exactly
+        # on a region boundary, so folding the two together made the ΠΕΡΙΑΓΩΓΗ
+        # branch swallow ΣΕΛΗΝΗ's return: it was absent from every timing table.
+        if name != prev:
+            log.append((name, step_i * dt, dist))
         if turned:
             banner, flash = PERIAGOGE, int(1.6 * fps)   # held longer than a caption
         elif name != prev:
-            log.append((name, step_i * dt, dist))
             banner, flash = None, int(0.5 * fps)
         else:
             flash = max(0, flash - 1)

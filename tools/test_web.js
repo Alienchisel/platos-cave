@@ -107,10 +107,13 @@ function timedRun(seed, fps, seconds) {
 }
 
 // 1. Region timings must match what the Python model reports.
+// From the Python model. Twelve entries: ΣΕΛΗΝΗ's return was missing from every
+// earlier table because the turn lands on that boundary and the ΠΕΡΙΑΓΩΓΗ branch
+// was swallowing the log entry.
 const EXPECTED = [
-  ['ΠΥΡ', 12.5], ['ΕΙΔΩΛΑ', 31.3], ['ΥΔΩΡ', 57.0], ['ΑΣΤΡΑ', 95.2],
-  ['ΣΕΛΗΝΗ', 145.7], ['ΗΛΙΟΣ', 212.6], ['ΣΕΛΗΝΗ', 242.6], ['ΑΣΤΡΑ', 273.0],
-  ['ΥΔΩΡ', 297.4], ['ΕΙΔΩΛΑ', 316.9], ['ΠΥΡ', 333.1], ['ΣΚΙΑΙ', 346.2],
+  ['ΠΥΡ', 12.7], ['ΕΙΔΩΛΑ', 29.6], ['ΥΔΩΡ', 50.7], ['ΑΣΤΡΑ', 81.8],
+  ['ΣΕΛΗΝΗ', 124.7], ['ΗΛΙΟΣ', 187.6], ['ΣΕΛΗΝΗ', 216.8], ['ΑΣΤΡΑ', 245.9],
+  ['ΥΔΩΡ', 269.8], ['ΕΙΔΩΛΑ', 289.2], ['ΠΥΡ', 305.3], ['ΣΚΙΑΙ', 318.4],
 ];
 console.log('region timings vs the Python model (50 fps):');
 const log50 = timedRun(3, 50, 400);

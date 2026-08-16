@@ -53,8 +53,10 @@ def curve_sheet(w=900, h=340):
     ]
 
     # The turn, and where each ascent lever expires.
-    for dist, label, col in ((cave.GAP_RAMP_END, "gap floor", (70, 90, 110)),
-                             (cave.SPEED_RAMP_END, "sun", (110, 100, 60)),
+    for dist, label, col in ((cave.REGIONS[cave.region_index(15999)][1],
+                              "last ascent step", (70, 90, 110)),
+                             (cave.REGIONS[len(cave.STAGES) - 1][1], "sun",
+                              (110, 100, 60)),
                              (cave.DESCENT_START, "turn back", (150, 80, 80))):
         px = x0 + pw * dist / cave.WIN_DIST
         d.line([px, y0, px, y0 + ph], fill=col)
