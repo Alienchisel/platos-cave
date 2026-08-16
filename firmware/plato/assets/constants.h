@@ -63,14 +63,8 @@ constexpr uint16_t STAR_RARITY  = 1400;    // 1 in N rock pixels
 // Stars are placed by WORLD column, not screen column, or they
 // swim across the rock as the cave scrolls.
 
-constexpr uint8_t REFLECT_LABEL  = LBL_HYDOR;
-// What reflects is the PLAYER, not the ceiling: the walls are
-// parallel, so a mirrored ceiling is just the floor translated
-// down and reads as a duplicate contour rather than as water.
-constexpr float REFLECT_SQUASH = 0.34f;  // a true mirror sits too deep to associate
-constexpr float REFLECT_RIPPLE = 1.40f;
-constexpr float REFLECT_LEVEL  = 0.60f;
-constexpr float REFLECT_SKIM   = 0.34f;  // without the surface, the double floats
+// HYDOR has no special texture. A reflection was built and
+// rejected; see GAME_DESIGN.
 
 // ---- physics ----------------------------------------------------
 // Scaled by panel height H. THRUST replaces gravity while the

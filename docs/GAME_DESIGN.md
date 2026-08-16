@@ -152,22 +152,20 @@ colour. Both are keyed by name, so the return gets them too.
   Confined to the rock: the passage already has its dither, and stars in it
   would read as noise.
 
-- **ΥΔΩΡ reflects.** The lower rock is a pool; its edge is the surface, with a
-  drifting skim of broken light on it, and the player's double appears mirrored
-  below — sinking as the player climbs.
+**ΥΔΩΡ has no texture — a reflection was built and rejected.** Recorded so it
+isn't proposed again from scratch, and because one finding constrains any future
+attempt.
 
-  **What reflects is the player, not the ceiling**, and that is not an aesthetic
-  choice. The cave's walls are *parallel*: `top` and `bot` are both
-  `centre ± gap/2`, so mirroring the ceiling about the floor yields the floor's
-  own curve translated downward. It reads as a duplicate contour, not as water.
-  The player moves independently of the walls, so its double is unmistakably a
-  reflection.
+The lower rock was made a pool, with a skim of broken light on its edge and the
+player's double mirrored below, sinking as the player climbed. It worked
+mechanically and was rejected on look.
 
-  The mirror is foreshortened hard (`REFLECT_SQUASH` 0.34). A true mirror puts
-  the double so deep it stops reading as a reflection and starts reading as a
-  second object.
-
-  This is the subtlest of the four flourishes and the least essential.
+The finding worth keeping: **there is no ceiling shape to reflect.** The cave's
+walls are *parallel* — `top` and `bot` are both `centre ± gap/2` — so mirroring
+the ceiling about the floor yields the floor's own curve translated downward, and
+reads as a duplicate contour rather than as water. That was the first attempt.
+Only the player moves independently of the walls, so only the player can be
+mirrored legibly. Any future water idea has to start from that.
 
 ### Obstacles
 

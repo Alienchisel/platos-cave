@@ -164,30 +164,9 @@ STARS_REGION = "ΑΣΤΡΑ"      # by then the rock reads as sky, not stone
 FLICKER_DEPTH = 0.16        # peak swing in light, as a fraction
 STAR_RARITY = 1400          # 1 in N rock pixels; higher is sparser
 
-# ΥΔΩΡ is reflections in water -- the first thing seen outside the cave. The
-# water cannot be the passage, or you would be flying through it, so the lower
-# rock is the pool and its edge is the surface.
-#
-# What gets reflected is the PLAYER, not the ceiling. The cave's walls are
-# parallel -- top and bot are both centre +/- gap/2 -- so mirroring the ceiling
-# about the floor yields the floor's own curve translated down, which reads as a
-# duplicate contour, not as water. The player moves independently of the walls,
-# so its mirrored double is unmistakably a reflection: rise, and it sinks.
-REFLECT_REGION = "ΥΔΩΡ"
-# Foreshortened hard: a true mirror puts the double so deep it stops reading as
-# a reflection and starts reading as a second object.
-REFLECT_SQUASH = 0.34
-REFLECT_RIPPLE = 1.4        # px of wobble on the surface
-REFLECT_LEVEL = 0.60        # brightness of the double against the rock
-REFLECT_SKIM = 0.34         # the water's face; without it the double floats
-
-
-def reflect_at(py, bot, dist):
-    """Screen y of the player's reflection in the pool, or None if it would
-    fall outside the water."""
-    r = bot + (bot - py) * REFLECT_SQUASH
-    r += REFLECT_RIPPLE * math.sin(dist * 0.19)
-    return r if bot + 1 < r < H - 1 else None
+# ΥΔΩΡ deliberately has no special texture. A reflection was built and rejected;
+# see GAME_DESIGN for why, including the finding that constrains any future
+# attempt: the walls are parallel, so there is no ceiling shape to mirror.
 
 
 def flicker_at(dist):
@@ -335,32 +314,6 @@ def draw_frame(cave, py, trail, dist, flash, banner=None):
         top, bot = cave.bounds(x)
         d.point((x, int(top)), fill=glow)
         d.point((x, int(bot)), fill=glow)
-
-    if name == REFLECT_REGION:
-        # A skim of broken light on the surface, so the pool has a face rather
-        # than just an edge. Dashes offset by distance, so it drifts.
-        skim = tuple((glow_a * REFLECT_SKIM).astype(int))
-        for x in range(W):
-            _, bot = cave.bounds(x)
-            if bot + 2 < H and (x + int(dist * 0.6)) % 9 < 5:
-                d.point((x, bot + 2), fill=skim)
-
-        # The player's double, and a piece of its trail. Mirrored about the
-        # surface, so it sinks as the player climbs.
-        _, pbot = cave.bounds(PLAYER_X)
-        r = reflect_at(py, pbot, dist)
-        if r is not None:
-            col = tuple((glow_a * REFLECT_LEVEL).astype(int))
-            d.rectangle([PLAYER_X - 1, r - 1, PLAYER_X + 1, r + 1], fill=col)
-            # Segments again, not points: a dotted reflection reads as debris.
-            faint = tuple((glow_a * 0.34).astype(int))
-            prev = None
-            for tx, ty, _ in trail[-16:]:
-                _, tb = cave.bounds(max(0, min(W - 1, int(tx))))
-                tr = reflect_at(ty, tb, dist)
-                if tr is not None and prev is not None:
-                    d.line([prev[0], prev[1], tx, tr], fill=faint)
-                prev = (tx, tr) if tr is not None else None
 
     # The returning eye cannot see far: on the descent a darkness closes in from
     # the right, eating forward view directly rather than by proxy. Applied after
