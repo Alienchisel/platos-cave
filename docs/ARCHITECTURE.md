@@ -251,8 +251,9 @@ needed.
 2. `platform/` — input mapping, clamped timing, canvas.
 3. Cave rendering, still-frame, no physics. Compare against
    `preview/cave_stages.png`.
-4. Physics and collision. **Tune gravity/thrust/clamp here** — the three
-   constants that have never met a thumb.
+4. Physics and collision. **Re-check gravity/thrust/clamp here** — they were
+   tuned by playtest in the browser, but with a keyboard, not a thumb on a
+   48 mm device. Start from the baked values; expect to move them.
 5. Stage progression and palette. Verify against the timings in GAME_DESIGN §9.
 6. Console shell: title, game over, scores, NVS.
 7. Initials entry — last, because it depends on the button answer.
