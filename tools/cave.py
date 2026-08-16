@@ -15,6 +15,7 @@ inverts -- you leave the cave into full light.
 """
 
 import argparse
+import math
 import random
 from pathlib import Path
 
@@ -113,6 +114,21 @@ WIN_DIST = 33000
 DESCENT = [(5, 19000, 0.72), (4, 22200, 0.66), (3, 25000, 0.60),
            (2, 27400, 0.54), (1, 29500, 0.48), (0, 31300, 0.42)]
 
+# Republic 518d: education is not putting sight into blind eyes but turning the
+# whole soul around. Plato's word for that turn is periagoge, and reaching the
+# sun and starting back down is exactly it.
+PERIAGOGE = "ΠΕΡΙΑΓΩΓΗ"
+
+# Death is not the same thing on the way up as on the way back. Climbing you are
+# still a prisoner; returning, 516e says your eyes are full of darkness.
+DEATH_ASCENT = "ΔΕΣΜΩΤΗΣ"    # prisoner
+DEATH_RETURN = "ΤΥΦΛΟΣ"      # blind
+
+
+def death_word(dist):
+    return DEATH_RETURN if dist >= DESCENT_START else DEATH_ASCENT
+
+
 # The 1px rock edge is drawn regardless of dither density, so it -- not the fill
 # -- is what keeps the passage legible. That is what makes near-total darkness
 # playable rather than merely unfair.
@@ -139,6 +155,29 @@ VIEW_DEPTH = 0.92
 TWIN_TRAIL = True
 TRAIL_SPREAD = 0.10     # px of divergence added per frame of age
 TRAIL_BASE = 1.4        # px of divergence at the player
+
+# ---- region texture -------------------------------------------------------
+# Two of the seven regions name something that moves, so they get more than a
+# colour. Both are keyed by name, which means the return gets them as well.
+FLICKER_REGION = "ΠΥΡ"      # firelight is not steady
+STARS_REGION = "ΑΣΤΡΑ"      # by then the rock reads as sky, not stone
+FLICKER_DEPTH = 0.16        # peak swing in light, as a fraction
+STAR_RARITY = 1400          # 1 in N rock pixels; higher is sparser
+
+
+def flicker_at(dist):
+    """Multiplier on a fire region's light. A function of distance, not of frame
+    count, so it flickers at the same rate whatever the frame rate."""
+    return (1.0
+            + FLICKER_DEPTH * 0.62 * math.sin(dist * 0.091)
+            + FLICKER_DEPTH * 0.38 * math.sin(dist * 0.237 + 1.7))
+
+
+def is_star(world_col, y):
+    """Deterministic scatter, fixed in world space so stars scroll with the rock
+    rather than swimming across it. Scalars or broadcastable arrays."""
+    h = (world_col * 73856093) ^ (y * 19349663)
+    return (h & 0x7FFFFFFF) % STAR_RARITY == 0
 
 
 def _regions():
@@ -207,6 +246,9 @@ class Cave:
         self.gap = gap_at(0)
         self.drift = 0.0
         self.cols = [(self.centre, self.gap) for _ in range(W)]
+        # World index of cols[0]. Stars are placed by world position, not screen
+        # position, or they would swim across the rock as the cave scrolls.
+        self.origin = 0
 
     def step(self, dist):
         """Advance exactly one column. Called n times per frame by the caller,
@@ -224,14 +266,17 @@ class Cave:
             self.centre, self.drift = H - margin, -abs(self.drift)
         self.cols.pop(0)
         self.cols.append((self.centre, self.gap))
+        self.origin += 1
 
     def bounds(self, x):
         c, g = self.cols[x]
         return c - g / 2, c + g / 2
 
 
-def draw_frame(cave, py, trail, dist, flash):
+def draw_frame(cave, py, trail, dist, flash, banner=None):
     name, _, light, rock, glow = stage_for(dist)
+    if name == FLICKER_REGION:
+        light = min(1.0, max(0.02, light * flicker_at(dist)))
     glow_a = np.array(glow, np.float32)
     unlit = (glow_a * 0.13).astype(np.uint8)      # passage where no dot falls
 
@@ -244,7 +289,17 @@ def draw_frame(cave, py, trail, dist, flash):
     ys = np.arange(H)[:, None]
     tops = np.array([cave.bounds(x)[0] for x in range(W)])[None, :]
     bots = np.array([cave.bounds(x)[1] for x in range(W)])[None, :]
-    canvas[(ys < tops) | (ys > bots)] = np.array(rock, np.uint8)
+    is_rock = (ys < tops) | (ys > bots)
+    canvas[is_rock] = np.array(rock, np.uint8)
+
+    if name == STARS_REGION:
+        # Scattered through the rock only: the passage already has its dither,
+        # and stars in it would read as noise rather than as sky. Evaluated as
+        # one broadcast rather than 32k scalar calls -- the same function, fed
+        # arrays.
+        wc = (cave.origin + np.arange(W, dtype=np.int64))[None, :]
+        star = is_star(wc, np.arange(H, dtype=np.int64)[:, None]) & is_rock
+        canvas[star] = np.clip(glow_a * 1.05 + 40, 0, 255).astype(np.uint8)
 
     img = Image.fromarray(canvas)
     d = ImageDraw.Draw(img)
@@ -312,10 +367,19 @@ def draw_frame(cave, py, trail, dist, flash):
     d.text((W - 4 - d.textlength(label, font=small), 2), label,
            font=small, fill=glow)
     if flash > 0:
-        w = d.textlength(name, font=small)
-        d.rectangle([(W - w) / 2 - 4, H - 26, (W + w) / 2 + 3, H - 12],
+        # The turn gets its own word, centred and larger. Plato's own term for
+        # the soul's turning-around is periagoge (Republic 518d): education is
+        # not putting sight into blind eyes but turning the whole soul about.
+        # That is precisely this moment, so it should not be just another
+        # region caption at the bottom of the screen.
+        text = banner or name
+        font = ImageFont.truetype(FONT, 15 if banner else 10)
+        w = d.textlength(text, font=font)
+        y = H / 2 - 10 if banner else H - 26
+        d.rectangle([(W - w) / 2 - 5, y - 2, (W + w) / 2 + 4, y + (17 if banner else 14)],
                     fill=tuple(rock))
-        d.text(((W - w) / 2, H - 25), name, font=small, fill=glow)
+        d.text(((W - w) / 2, y), text, font=font,
+               fill=(255, 246, 214) if banner else glow)
     return img
 
 
@@ -381,6 +445,7 @@ def simulate(seed, seconds, fps=50, render=True, render_at=None):
     dt = 1.0 / fps
     trail, out, log = [], [], []
     dist, col_accum, flash, prev = 0.0, 0.0, 0, STAGES[0][0]
+    banner = None
 
     for step_i in range(int(seconds * fps)):
         top, bot = cave.bounds(PLAYER_X)
@@ -401,11 +466,16 @@ def simulate(seed, seconds, fps=50, render=True, render_at=None):
             columns += 1
 
         name = stage_for(dist)[0]
-        if name != prev:
+        turned = (dist >= DESCENT_START > dist - advance)
+        if turned:
+            banner, flash = PERIAGOGE, int(1.6 * fps)   # held longer than a caption
+        elif name != prev:
             log.append((name, step_i * dt, dist))
-            flash = int(0.5 * fps)
+            banner, flash = None, int(0.5 * fps)
         else:
             flash = max(0, flash - 1)
+            if flash == 0:
+                banner = None
         prev = name
 
         if render:
@@ -420,7 +490,7 @@ def simulate(seed, seconds, fps=50, render=True, render_at=None):
             trail.append((PLAYER_X, int(py), thrust))
             trail = trail[-40:]
             if render_at is None or step_i in render_at:
-                out.append(draw_frame(cave, py, trail, dist, flash))
+                out.append(draw_frame(cave, py, trail, dist, flash, banner))
 
         # Re-read the bounds: the player has moved and the cave has scrolled
         # since `top`/`bot` were taken, so testing against those stale values

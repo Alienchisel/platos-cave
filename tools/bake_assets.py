@@ -52,6 +52,8 @@ LABELS = [
     ("DESMOTES",      "ΔΕΣΜΩΤΗΣ"),     # game over -- "prisoner"
     ("LELYTAI",       "ΛΕΛΥΤΑΙ"),      # score table: a completed run, "has been freed"
     ("KATEBEN",       "ΚΑΤΕΒΗΝ"),      # victory -- the Republic's first word, "I went down"
+    ("PERIAGOGE",     "ΠΕΡΙΑΓΩΓΗ"),    # the turn at the sun -- Republic 518d
+    ("TYPHLOS",       "ΤΥΦΛΟΣ"),       # died on the return -- "blind", 516e
 ]
 
 # Only Greek needs baking. LovyanGFX ships Latin fonts, so the English on these
