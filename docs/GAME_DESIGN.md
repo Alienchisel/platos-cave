@@ -114,6 +114,47 @@ readable and the mechanic does nothing.
 well as darker, so the collapse accelerates. Ascent: long, escalating,
 learnable. Return: compressed, dark, brutal.
 
+### ΠΕΡΙΑΓΩΓΗ — the turn
+
+*Republic* 518d: education is not putting sight into blind eyes but **turning the
+whole soul around**. Plato's word for that is *periagoge*, and reaching the sun
+and starting back down is precisely it.
+
+So the turn gets its own banner — centred, larger than a region caption, held
+1.6 s rather than 0.5 s. It is the only moment in the run that interrupts the
+frame rather than annotating its corner, which is right: it is the hinge the
+whole design turns on.
+
+### Two deaths
+
+Dying on the way up and dying on the way back are not the same event.
+
+| | | |
+| --- | --- | --- |
+| **ΔΕΣΜΩΤΗΣ** | *prisoner* | died ascending — fire-orange |
+| **ΤΥΦΛΟΣ** | *blind* | died returning — dazzled pale |
+
+516e says the returning man's eyes are full of darkness. Once you have been
+freed you are not a prisoner any more, so the word changes, and so does the
+colour. *This resolves the death-screen question that stood in §10.*
+
+### Region texture
+
+Two of the seven regions name something that **moves**, so they get more than a
+colour. Both are keyed by name, so the return gets them too.
+
+- **ΠΥΡ flickers.** Firelight is not steady. The dither density swings about 20
+  levels either side of 61/255, at 0.8–2.1 Hz. Driven by *distance*, not frame
+  count, so it flickers at the same rate whatever the frame rate.
+- **ΑΣΤΡΑ has stars.** Sparse bright points scattered through the rock — which
+  by that stage reads as sky, not stone. Placed by **world** position rather
+  than screen position, or they would swim across the rock as the cave scrolls.
+  Confined to the rock: the passage already has its dither, and stars in it
+  would read as noise.
+
+ΥΔΩΡ could mirror the rock edge faintly for reflections. Not done; more work
+than the other two and less certain to read.
+
 ### Obstacles
 
 Free-floating blocks belong **to the return only**, if they are used at all. On
@@ -341,17 +382,16 @@ original per-frame guesses and have still never been driven by a human thumb.
 1. **Death behaviour.** Pure restart is the SFCave contract, and it bites harder
    now there is 5:46 to lose. Checkpointing at the sun would be merciful and
    would badly undercut the return. *Recommendation: pure restart.*
-2. **Death screen.** ΔΕΣΜΩΤΗΣ — *prisoner* — with distance and best. Blunt, but
-   it lands.
-3. **Win screen.** Undesigned. Reaching the chains needs to read as victory
-   while the imagery is of returning to captivity, which is the whole joke.
-4. **Dither at ΗΛΙΟΣ** — see §4.
-5. **`VIEW_CLOSE`** — see §3a. The most likely constant to be wrong.
-6. **Initials entry scheme** — blocked on button count.
+2. **Dither at ΗΛΙΟΣ** — see §4.
+3. **`VIEW_CLOSE`** — see §3a. The most likely constant to be wrong.
+4. **Initials entry scheme** — blocked on button count.
+5. **ΥΔΩΡ reflections** — the one region flourish not attempted.
 
 *Resolved: **stage pacing** — the ascent runs 212.6 s, frame-rate independent
 (§9). **Win condition** — reaching the chains after the return (§3a).
-**Obstacles** — the return only, if at all (§3a).*
+**Obstacles** — the return only, if at all (§3a). **Death screen** — two words,
+ΔΕΣΜΩΤΗΣ ascending and ΤΥΦΛΟΣ returning (§3a). **Win screen** — ΚΑΤΕΒΗΝ, the
+Republic's first word.*
 
 *Still guesses: the three physics constants, and now `VIEW_CLOSE`.*
 

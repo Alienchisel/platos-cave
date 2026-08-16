@@ -122,16 +122,22 @@ def scores():
 
 
 def gameover(died_at=8100, best=20400):
+    """Two deaths, not one. Climbing you are still a prisoner; returning, your
+    eyes are full of darkness (Republic 516e) and the word is ΤΥΦΛΟΣ."""
     img = Image.new("RGB", (cave.W, cave.H), (0, 0, 0))
     d = ImageDraw.Draw(img)
     tiny, small, med, big = fonts()
     cx = cave.W / 2
 
-    w = d.textlength("ΔΕΣΜΩΤΗΣ", font=big)
-    d.text((cx - w / 2, 12), "ΔΕΣΜΩΤΗΣ", font=big, fill=(232, 116, 36))
-    g = "PRISONER"
-    d.text((cx - d.textlength(g, font=tiny) / 2, 38), g, font=tiny,
-           fill=(120, 90, 70))
+    word = cave.death_word(died_at)
+    gloss = "BLIND" if word == cave.DEATH_RETURN else "PRISONER"
+    hue = (196, 202, 226) if word == cave.DEATH_RETURN else (232, 116, 36)
+    dim = (96, 100, 118) if word == cave.DEATH_RETURN else (120, 90, 70)
+
+    w = d.textlength(word, font=big)
+    d.text((cx - w / 2, 12), word, font=big, fill=hue)
+    d.text((cx - d.textlength(gloss, font=tiny) / 2, 38), gloss, font=tiny,
+           fill=dim)
 
     label, idx = region_line(died_at)
     progress_pips(d, cx, 58, idx)
@@ -190,7 +196,9 @@ def victory():
 
 
 SCREENS = (("title", title), ("scores", scores),
-           ("gameover", gameover), ("victory", victory))
+           ("gameover", gameover),
+           ("gameover_return", lambda: gameover(died_at=26800, best=31000)),
+           ("victory", victory))
 
 
 def main():
@@ -215,7 +223,8 @@ def main():
 
     z = args.zoom
     cw, ch = cave.W * z, cave.H * z
-    sheet = Image.new("RGB", (cw * 2 + 24, (ch + 26) * 2 + 8), (16, 16, 18))
+    rows = (len(made) + 1) // 2
+    sheet = Image.new("RGB", (cw * 2 + 24, (ch + 26) * rows + 8), (16, 16, 18))
     d = ImageDraw.Draw(sheet)
     f = ImageFont.truetype(FONT, 14)
     for i, (name, img) in enumerate(made):
