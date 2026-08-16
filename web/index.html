@@ -177,19 +177,67 @@ function reset(seed) {
         py: H / 2, vy: 0, dist: 0, acc: 0, trail: [],
         banner: null, flashT: 0, t: 0, state: 'ready', best: loadBest() };
 }
-function loadBest() { return +(localStorage.getItem('pc_best') || 0); }
-function saveBest(d) {
-  if (d > loadBest()) localStorage.setItem('pc_best', Math.round(d));
+// ΟΙ ΛΥΘΕΝΤΕΣ -- "those who were released". Seeded with the Neoplatonists above
+// the Republic's cast, because the cast were never released: they sat in a house
+// in the Piraeus and heard about someone who was.
+const DEFAULT_SCORES = [
+  ['ΠΛΩ', 33000], ['ΠΟΡ', 30200], ['ΙΑΜ', 27900], ['ΠΡΟ', 24100],
+  ['ΔΑΜ', 20300], ['ΣΩΚ', 14600], ['ΓΛΑ', 7200], ['ΘΡΑ', 940],
+];
+const TABLE_LEN = 8;
+const ALPHABET = 'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ';   // no final sigma: never initial
+const LONG_MS = 400;                            // press longer than this = confirm
+
+function loadScores() {
+  try {
+    const v = JSON.parse(localStorage.getItem('pc_scores'));
+    if (Array.isArray(v) && v.length) return v;
+  } catch (e) { /* fall through to defaults */ }
+  return DEFAULT_SCORES.map(([ini, dist]) => ({ ini, dist }));
+}
+function saveScores(t) { localStorage.setItem('pc_scores', JSON.stringify(t)); }
+function loadBest() { return Math.round(loadScores()[0]?.dist || 0); }
+function qualifies(d) {
+  const t = loadScores();
+  return t.length < TABLE_LEN || d > t[t.length - 1].dist;
+}
+function commitScore(ini, dist) {
+  const t = loadScores();
+  t.push({ ini, dist: Math.round(dist) });
+  t.sort((a, b) => b.dist - a.dist);
+  saveScores(t.slice(0, TABLE_LEN));
 }
 
-let held = false;
+let held = false, pressAt = 0;
 function press() {
   if (!S) { reset(); return; }
+  pressAt = performance.now();
   if (S.state === 'ready') { S.state = 'play'; held = true; return; }
-  if (S.state !== 'play') { reset(); return; }
-  held = true;
+  if (S.state === 'play') { held = true; return; }
+  // 'initials' resolves on release, since it needs the press duration.
+  if (S.state === 'dead' || S.state === 'won') {
+    if (S.pending) { S.pending = false; S.state = 'initials'; S.slot = 0;
+                     S.ini = ['Α', 'Α', 'Α']; }
+    else reset();
+    return;
+  }
+  if (S.state === 'scores') { reset(); }
 }
-function release() { held = false; }
+function release() {
+  held = false;
+  if (!S || S.state !== 'initials') return;
+  // One button, arcade convention adapted: a tap steps the letter, a hold
+  // commits it. This is the fallback if the StickS3 turns out to have only one
+  // programmable button -- worth feeling before the hardware decides for us.
+  if (performance.now() - pressAt >= LONG_MS) {
+    if (++S.slot >= 3) {
+      commitScore(S.ini.join(''), S.dist);
+      S.state = 'scores';
+    }
+  } else {
+    S.ini[S.slot] = ALPHABET[(ALPHABET.indexOf(S.ini[S.slot]) + 1) % ALPHABET.length];
+  }
+}
 addEventListener('keydown', e => {
   if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); press(); }
 });
@@ -299,8 +347,64 @@ function draw() {
   }
 
   if (S.state === 'ready') readyCard();
+  else if (S.state === 'initials') initialsCard();
+  else if (S.state === 'scores') scoresCard();
   else if (S.state !== 'play') endCard(reg);
   vx.drawImage(buf, 0, 0, view.width, view.height);
+}
+
+function initialsCard() {
+  g.fillStyle = 'rgba(0,0,0,.82)'; g.fillRect(0, 0, W, H);
+  g.textAlign = 'center';
+  g.font = '10px ui-monospace,Consolas,monospace';
+  g.fillStyle = '#fff6d6'; g.fillText('ΟΙ ΛΥΘΕΝΤΕΣ', W / 2, 12);
+  g.font = '9px ui-monospace,Consolas,monospace';
+  g.fillStyle = '#78788a'; g.fillText('YOU ARE ON THE TABLE', W / 2, 28);
+
+  g.font = '22px ui-monospace,Consolas,monospace';
+  for (let i = 0; i < 3; i++) {
+    const x = W / 2 + (i - 1) * 30;
+    const on = i === S.slot;
+    g.fillStyle = on ? '#fff6d6' : (i < S.slot ? '#c8c8d2' : '#3a3f4c');
+    g.fillText(S.ini[i], x, 48);
+    if (on) { g.fillStyle = '#ec7424'; g.fillRect(x - 11, 76, 22, 2); }
+  }
+  g.font = '9px ui-monospace,Consolas,monospace';
+  g.fillStyle = '#8c8c96';
+  g.fillText('TAP: NEXT LETTER', W / 2, 92);
+  g.fillText('HOLD: CONFIRM', W / 2, 104);
+}
+
+function scoresCard() {
+  g.fillStyle = 'rgba(0,0,0,.88)'; g.fillRect(0, 0, W, H);
+  const table = loadScores();
+  g.textAlign = 'center';
+  g.font = '10px ui-monospace,Consolas,monospace';
+  g.fillStyle = '#fff'; g.fillText('ΟΙ ΛΥΘΕΝΤΕΣ', W / 2, 2);
+  g.fillStyle = '#50505c'; g.fillRect(10, 16, W - 20, 1);
+
+  g.font = '10px ui-monospace,Consolas,monospace';
+  table.slice(0, TABLE_LEN).forEach((row, i) => {
+    const y = 21 + i * 13;
+    const mine = Math.round(row.dist) === Math.round(S.dist) && S.justPlaced;
+    const won = row.dist >= WIN_DIST;
+    const col = mine ? '#ec7424' : won ? '#fff6d6' : (i < 3 ? '#d7d7d7' : '#969696');
+    g.textAlign = 'left';
+    g.fillStyle = '#69697a'; g.fillText(String(i + 1), 10, y);
+    g.fillStyle = col; g.fillText(row.ini, 26, y);
+    g.textAlign = 'right';
+    g.fillText(String(Math.round(row.dist)), 120, y);
+    g.textAlign = 'left';
+    const idx = regionIndex(row.dist);
+    g.font = '9px ui-monospace,Consolas,monospace';
+    g.fillStyle = won ? '#ffebaa' : '#7d7d86';
+    g.fillText((idx >= ASCENT_COUNT ? '↓' : ' ') +
+               (won ? 'ΛΕΛΥΤΑΙ' : REGIONS[idx].name), 138, y + 1);
+    g.font = '10px ui-monospace,Consolas,monospace';
+  });
+  g.textAlign = 'center';
+  g.font = '9px ui-monospace,Consolas,monospace';
+  g.fillStyle = '#6a6a76'; g.fillText('PRESS TO PLAY AGAIN', W / 2, H - 11);
 }
 
 function readyCard() {
@@ -348,7 +452,8 @@ function endCard(reg) {
   const mm = Math.floor(S.t / 60), ss = Math.floor(S.t % 60);
   g.fillText(`${mm}:${String(ss).padStart(2, '0')}    ${Math.round(S.dist)}`, W / 2, 94);
   g.fillStyle = '#6a6a76'; g.font = '9px ui-monospace,Consolas,monospace';
-  g.fillText('PRESS TO TRY AGAIN', W / 2, 112);
+  g.fillText(S.pending ? 'PRESS TO ENTER YOUR NAME' : 'PRESS TO TRY AGAIN',
+             W / 2, 112);
 }
 
 // ---------------------------------------------------------------- main loop
@@ -384,8 +489,12 @@ function frame(now) {
     if (S.trail.length > TRAIL_LEN) S.trail.shift();
 
     const [top, bot] = S.cave.bounds(PLAYER_X);
-    if (S.py < top || S.py > bot) { S.state = 'dead'; saveBest(S.dist); }
-    if (S.dist >= WIN_DIST) { S.state = 'won'; saveBest(S.dist); }
+    const over = S.py < top || S.py > bot;
+    if (over || S.dist >= WIN_DIST) {
+      S.state = over ? 'dead' : 'won';
+      S.pending = qualifies(S.dist);   // a win always qualifies; it is the max
+      S.justPlaced = S.pending;
+    }
   }
   draw();
   hud();

@@ -44,9 +44,12 @@ const sandbox = {
   document: { getElementById: el, createElement: el },
   localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => store[k] = String(v) },
   addEventListener: noop, requestAnimationFrame: noop,
-  performance: { now: () => 0 }, innerWidth: 1200, innerHeight: 800,
+  // Controllable clock: the one-button initials scheme distinguishes a tap from
+  // a hold by duration, so the harness has to be able to move time.
+  performance: { now: () => clock }, innerWidth: 1200, innerHeight: 800,
   Math, console,
 };
+let clock = 0;
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 vm.runInContext(js + `
@@ -55,7 +58,9 @@ globalThis.__t = {
   get S() { return S; },
   setHeld(v) { held = v; }, setLast(v) { last = v; },
   noDraw() { draw = () => {}; hud = () => {}; },
+  release, loadScores, saveScores, qualifies, commitScore,
   REGIONS, WIN_DIST, DESCENT_START, ASCENT_COUNT, PLAYER_X, W, H,
+  TABLE_LEN, ALPHABET, LONG_MS,
 };`, sandbox);
 
 const T = sandbox.__t;
@@ -141,7 +146,50 @@ let died = false;
 for (let i = 1; i <= 900 && !died; i++) { T.setHeld(false); T.frame(i * 1000 / 60); died = T.S.state === 'dead'; }
 ok(died, 'falling with no thrust dies');
 
-// 5. Not a pass/fail -- a difficulty reading. A lookahead controller aiming at
+// 5. The score table. Bugs here silently lose the player's runs.
+console.log('\nhigh-score table:');
+delete store['pc_scores'];
+const defaults = T.loadScores();
+ok(defaults.length === T.TABLE_LEN, `defaults seed ${T.TABLE_LEN} entries`);
+ok(defaults[0].ini === 'ΠΛΩ', `top of the default table is ΠΛΩ (${defaults[0].ini})`);
+ok(!T.qualifies(500), 'a run below the last entry does not qualify');
+ok(T.qualifies(1000), 'a run above the last entry qualifies');
+ok(T.qualifies(T.WIN_DIST), 'a completed run always qualifies');
+
+T.commitScore('ΤΕΣ', 25000);
+const after = T.loadScores();
+ok(after.length === T.TABLE_LEN, `table stays at ${T.TABLE_LEN} after an insert`);
+ok(after.some(r => r.ini === 'ΤΕΣ'), 'the new entry is on the table');
+ok(!after.some(r => r.ini === 'ΘΡΑ'), 'the lowest entry was pushed off');
+ok(after.every((r, i) => i === 0 || after[i - 1].dist >= r.dist),
+   'the table stays sorted');
+
+// Corrupt storage must not brick the page -- it is a real thing that happens.
+store['pc_scores'] = '{not json';
+ok(T.loadScores().length === T.TABLE_LEN, 'corrupt storage falls back to defaults');
+delete store['pc_scores'];
+
+// 6. One-button initials entry: tap steps a letter, hold commits it.
+console.log('\none-button initials entry:');
+T.reset(3); T.setLast(0); T.press();
+T.S.dist = 5000; T.S.state = 'dead'; T.S.pending = true;
+clock = 1000; T.press();                       // enter the initials screen
+ok(T.S.state === 'initials', `press on a qualifying death opens entry (${T.S.state})`);
+ok(T.S.ini.join('') === 'ΑΑΑ', `starts at ΑΑΑ (${T.S.ini.join('')})`);
+
+const tap = () => { clock += 10; T.press(); clock += 50; T.release(); };
+const hold = () => { clock += 10; T.press(); clock += T.LONG_MS + 60; T.release(); };
+tap(); tap();
+ok(T.S.ini[0] === T.ALPHABET[2], `two taps reach ${T.ALPHABET[2]} (${T.S.ini[0]})`);
+hold();
+ok(T.S.slot === 1, `a hold advances to slot 2 (slot=${T.S.slot})`);
+tap(); hold(); hold();
+ok(T.S.state === 'scores', `three holds commit and show the table (${T.S.state})`);
+ok(T.loadScores().some(r => r.dist === 5000), 'the run was written to the table');
+clock += 10; T.press();
+ok(T.S.state === 'ready', `press on the table starts a fresh run (${T.S.state})`);
+
+// 7. Not a pass/fail -- a difficulty reading. A lookahead controller aiming at
 //    the tightest point in the window ahead is a decent proxy for a good human.
 function skilledRun(seed, look = 16, k = 10) {
   T.reset(seed); T.setLast(0); T.press();
