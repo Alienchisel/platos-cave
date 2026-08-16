@@ -189,7 +189,7 @@ check is mechanical.
 ## 10. Console state machine
 
 ```
-BOOT ──► TITLE ──confirm──► [MENU]* ──► PLAY ──┬─died──► GAMEOVER ─┐
+BOOT ──► TITLE ──confirm──► [MENU]* ──► READY ──confirm──► PLAY ──┬─died──► GAMEOVER ─┐
   ▲                                            │                   │
   │                                            └─won───► VICTORY ──┤
   │                                                                │
@@ -201,6 +201,13 @@ BOOT ──► TITLE ──confirm──► [MENU]* ──► PLAY ──┬─d
 
 * MENU skipped while only one game is registered.
 ```
+
+**READY is not optional.** A run that begins on entry is unplayable: the opening
+gap gives 248 ms before impact against ~250 ms of human reaction time. The world
+holds frozen until `confirm`, and that same press is the first thrust. See
+GAME_DESIGN §4. `Game` needs a way to express this — either a `ready()` phase
+before `update()` starts advancing, or the console holding the first frame until
+input arrives.
 
 `Game::finished()` alone is not enough once the game is winnable — the console
 has to know *how* it ended. Either add `Game::outcome()` returning

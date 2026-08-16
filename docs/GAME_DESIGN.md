@@ -222,6 +222,33 @@ deliberate rather than as a generic gradient game, and it keeps density-as-progr
 legible. It is also cheap — the renderer stays effectively 1-bit with a per-stage
 palette lookup.
 
+### ⚠ A run must not begin until the player presses
+
+**Required behaviour, found by playtest.** From a standing start the opening gap
+leaves **248 ms before you hit the floor** — against a human simple visual
+reaction time of about **250 ms**. A run that begins the moment it loads is
+already lost, and the first playtest feedback was exactly that: *"I keep dying
+within the first second."*
+
+So a fresh run holds at the middle of the passage with the world frozen, and the
+**first press both starts the run and counts as the first thrust** — by the time
+gravity applies, the player is already climbing.
+
+This is not a web-build nicety. The firmware needs it too, or the device is
+unplayable on power-on.
+
+For reference, time-to-floor from rest at each stage:
+
+| | gap | from rest |
+| --- | --- | --- |
+| start | 64.8 px | 248 ms |
+| ΕΙΔΩΛΑ | 59.3 px | 237 ms |
+| ΣΕΛΗΝΗ | 34.7 px | 182 ms |
+| the chains | 21.2 px | 142 ms |
+
+The later figures are tighter still but are *not* a problem: by then the player
+is flying, never at rest. Only the standing start is unfair.
+
 ### The player
 
 A pure white 2 × 2 core inside a dark halo. White because it must read against

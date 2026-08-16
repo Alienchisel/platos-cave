@@ -51,7 +51,7 @@ sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 vm.runInContext(js + `
 globalThis.__t = {
-  frame, reset, regionAt, speedAt, gapAt,
+  frame, reset, press, regionAt, speedAt, gapAt,
   get S() { return S; },
   setHeld(v) { held = v; }, setLast(v) { last = v; },
   noDraw() { draw = () => {}; hud = () => {}; },
@@ -72,7 +72,7 @@ const near = (a, b, tol, what) =>
 /* Mirrors cave.simulate(): aim at the passage centre, and on contact recentre
  * and continue rather than ending the run. */
 function timedRun(seed, fps, seconds) {
-  T.reset(seed); T.setLast(0);
+  T.reset(seed); T.setLast(0); T.press();   // a run now waits for the first press
   const log = [];
   let prev = T.regionAt(0);
   for (let i = 1; i <= seconds * fps; i++) {
@@ -121,7 +121,7 @@ console.log('\nend conditions:');
 // Collisions are forgiven here for the same reason as in timedRun: what is
 // under test is the win *condition*, not whether a pilot can survive to it.
 // Holding thrust instead simply flies into the ceiling and proves nothing.
-T.reset(3); T.setLast(0);
+T.reset(3); T.setLast(0); T.press();
 T.S.dist = T.WIN_DIST - 200;
 for (let i = 1; i <= 400 && T.S.state !== 'won'; i++) {
   const S = T.S;
@@ -136,7 +136,7 @@ for (let i = 1; i <= 400 && T.S.state !== 'won'; i++) {
 ok(T.S.state === 'won', `crossing ${T.WIN_DIST} wins (state=${T.S.state})`);
 
 // 4. Collision must actually end a run.
-T.reset(11); T.setLast(0);
+T.reset(11); T.setLast(0); T.press();
 let died = false;
 for (let i = 1; i <= 900 && !died; i++) { T.setHeld(false); T.frame(i * 1000 / 60); died = T.S.state === 'dead'; }
 ok(died, 'falling with no thrust dies');
@@ -144,7 +144,7 @@ ok(died, 'falling with no thrust dies');
 // 5. Not a pass/fail -- a difficulty reading. A lookahead controller aiming at
 //    the tightest point in the window ahead is a decent proxy for a good human.
 function skilledRun(seed, look = 16, k = 10) {
-  T.reset(seed); T.setLast(0);
+  T.reset(seed); T.setLast(0); T.press();
   for (let i = 1; i <= 25000; i++) {
     const S = T.S;
     if (S.state !== 'play') return { dist: S.dist, t: i / 50, state: S.state };

@@ -168,9 +168,14 @@ class Cave {
 // ------------------------------------------------------------- game session
 let S = null;
 function reset(seed) {
+  // Starts 'ready', not 'play'. From a standing start the opening gap gives
+  // 248 ms before you hit the floor, against a human reaction time of about
+  // 250 ms -- so a run that begins the instant it loads is already lost. The
+  // player holds at the centre until they press, and that press is also the
+  // first thrust.
   S = { cave: new Cave(seed || (Math.random() * 1e9 | 0)),
         py: H / 2, vy: 0, dist: 0, acc: 0, trail: [],
-        banner: null, flashT: 0, t: 0, state: 'play', best: loadBest() };
+        banner: null, flashT: 0, t: 0, state: 'ready', best: loadBest() };
 }
 function loadBest() { return +(localStorage.getItem('pc_best') || 0); }
 function saveBest(d) {
@@ -179,7 +184,9 @@ function saveBest(d) {
 
 let held = false;
 function press() {
-  if (!S || S.state !== 'play') { reset(); return; }
+  if (!S) { reset(); return; }
+  if (S.state === 'ready') { S.state = 'play'; held = true; return; }
+  if (S.state !== 'play') { reset(); return; }
   held = true;
 }
 function release() { held = false; }
@@ -291,8 +298,20 @@ function draw() {
     g.fillStyle = rgb(glow); g.fillText(reg.name, W / 2, H - 26);
   }
 
-  if (S.state !== 'play') endCard(reg);
+  if (S.state === 'ready') readyCard();
+  else if (S.state !== 'play') endCard(reg);
   vx.drawImage(buf, 0, 0, view.width, view.height);
+}
+
+function readyCard() {
+  g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, 0, W, H);
+  g.textAlign = 'center';
+  g.font = '13px ui-monospace,Consolas,monospace';
+  g.fillStyle = '#fff6d6'; g.fillText('ΣΚΙΑΙ', W / 2, H / 2 - 20);
+  g.font = '9px ui-monospace,Consolas,monospace';
+  g.fillStyle = '#78788a'; g.fillText('SHADOWS ON THE WALL', W / 2, H / 2 - 2);
+  g.font = '10px ui-monospace,Consolas,monospace';
+  g.fillStyle = '#c8c8d2'; g.fillText('HOLD TO CLIMB', W / 2, H / 2 + 18);
 }
 
 function endCard(reg) {
@@ -336,6 +355,11 @@ function endCard(reg) {
 let last = performance.now();
 function frame(now) {
   const dt = Math.min((now - last) / 1000, DT_CLAMP); last = now;
+  if (S.state === 'ready') {
+    // Hold at the middle of the passage, world frozen, until the first press.
+    const [t0, b0] = S.cave.bounds(PLAYER_X);
+    S.py = (t0 + b0) / 2; S.vy = 0;
+  }
   if (S.state === 'play') {
     S.t += dt;
     S.vy += (held ? THRUST : GRAVITY) * H * dt;
