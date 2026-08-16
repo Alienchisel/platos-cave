@@ -66,7 +66,7 @@ globalThis.__t = {
   get S() { return S; },
   setHeld(v) { held = v; }, setLast(v) { last = v; },
   noDraw() { draw = () => {}; hud = () => {}; },
-  release, loadScores, saveScores, qualifies, commitScore,
+  release, loadScores, saveScores, qualifies, commitScore, loadIni,
   loadMyBest, noteRun, nextAbove,
   REGIONS, WIN_DIST, DESCENT_START, ASCENT_COUNT, PLAYER_X, W, H,
   TABLE_LEN, ALPHABET, LONG_MS,
@@ -226,14 +226,20 @@ delete store['pc_mybest'];
 
 // 6. One-button initials entry: tap steps a letter, hold commits it.
 console.log('\none-button initials entry:');
-T.reset(3); T.setLast(0); T.press();
-T.S.dist = 5000; T.S.state = 'dead'; T.S.pending = true;
-clock = 1000; T.press();                       // enter the initials screen
-ok(T.S.state === 'initials', `press on a qualifying death opens entry (${T.S.state})`);
-ok(T.S.ini.join('') === 'ΑΑΑ', `starts at ΑΑΑ (${T.S.ini.join('')})`);
-
+delete store['pc_ini'];
 const tap = () => { clock += 10; T.press(); clock += 50; T.release(); };
 const hold = () => { clock += 10; T.press(); clock += T.LONG_MS + 60; T.release(); };
+// Park a qualifying death and press through to the entry screen.
+function toEntry(dist) {
+  T.reset(3); T.setLast(0); T.press();
+  T.S.dist = dist; T.S.state = 'dead'; T.S.pending = true;
+  clock += 1000; T.press();
+}
+
+toEntry(5000);
+ok(T.S.state === 'initials', `press on a qualifying death opens entry (${T.S.state})`);
+ok(T.S.ini.join('') === 'ΑΑΑ', `a first-time player starts at ΑΑΑ (${T.S.ini.join('')})`);
+
 tap(); tap();
 ok(T.S.ini[0] === T.ALPHABET[2], `two taps reach ${T.ALPHABET[2]} (${T.S.ini[0]})`);
 hold();
@@ -243,6 +249,22 @@ ok(T.S.state === 'scores', `three holds commit and show the table (${T.S.state})
 ok(T.loadScores().some(r => r.dist === 5000), 'the run was written to the table');
 clock += 10; T.press();
 ok(T.S.state === 'ready', `press on the table starts a fresh run (${T.S.state})`);
+
+// Persistence: dying fifty seconds in should not cost you the name each time.
+ok(store['pc_ini'] === 'ΓΒΑ', `the committed name is remembered (${store['pc_ini']})`);
+toEntry(6000);
+ok(T.S.ini.join('') === 'ΓΒΑ', `entry reopens on your last name (${T.S.ini.join('')})`);
+hold(); hold(); hold();
+ok(T.loadScores().some(r => r.ini === 'ΓΒΑ' && r.dist === 6000),
+   'three holds re-enter it unchanged');
+
+// Storage is editable and shared with whatever else uses this origin; a bad
+// value must not strand you on a screen with no letter you can reach.
+for (const bad of ['', 'ΑΒ', 'ΑΒΓΔ', 'ABC', 'ΑΒς', '{not json']) {
+  store['pc_ini'] = bad;
+  ok(T.loadIni().join('') === 'ΑΑΑ', `${JSON.stringify(bad)} falls back to ΑΑΑ`);
+}
+delete store['pc_ini'];
 
 // 7. Not a pass/fail -- a difficulty reading. A lookahead controller aiming at
 //    the tightest point in the window ahead is a decent proxy for a good human.
