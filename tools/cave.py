@@ -129,6 +129,17 @@ LIGHT_FLOOR = 0.06
 VIEW_CLOSE = 0.55
 VIEW_DEPTH = 0.92
 
+# The Phaedrus chariot (246a-254e): the soul as a charioteer with two horses,
+# one noble and one unruly, pulling opposite ways. That is already the control
+# scheme -- thrust against gravity, with the player holding the balance -- so the
+# trail shows it rather than a sprite depicting it. A chariot large enough to
+# read cannot fit through a 21px passage; a twin wake works at any size.
+#
+# Set False for a single strand.
+TWIN_TRAIL = True
+TRAIL_SPREAD = 0.10     # px of divergence added per frame of age
+TRAIL_BASE = 1.4        # px of divergence at the player
+
 
 def _regions():
     out = list(STAGES)
@@ -258,13 +269,39 @@ def draw_frame(cave, py, trail, dist, flash):
             (arr * (1.0 - fade * VIEW_DEPTH * occ)[None, :, None]).astype(np.uint8))
         d = ImageDraw.Draw(img)
 
-    # Oldest first. The trail brightens toward the player rather than darkening:
-    # a dim trail sits between the lit and unlit dither tones and vanishes, so it
-    # has to run brighter than the passage, fading back into it with age.
-    for i, (tx, ty) in enumerate(trail):
-        f = (i / max(1, len(trail) - 1)) ** 1.6
-        d.point((tx, ty), fill=tuple((glow_a + (255 - glow_a) * f * 0.85)
-                                     .astype(int)))
+    # The trail must contrast with the passage, and the passage changes from
+    # near-black to near-white across the run. A trail that only ever brightens
+    # is invisible from SELENE onward -- there is nothing above a solid pale
+    # dither to brighten into. So its polarity flips with the region's light:
+    # bright against a dark passage, dark against a lit one.
+    n = max(1, len(trail) - 1)
+    dark_on_light = light >= 0.5
+    rock_a = np.array(rock, np.float32)
+
+    def strand(f, lead):
+        if dark_on_light:
+            return tuple((glow_a + (rock_a - glow_a) * (0.35 + 0.6 * f * lead))
+                         .astype(int))
+        return tuple((glow_a + (255 - glow_a) * f * 0.9 * lead).astype(int))
+
+    # Drawn as connected segments, not isolated points. A single pixel cannot
+    # compete with a single-pixel dither: in a 50-80% lit field one differently
+    # coloured pixel is just another dither cell, which is why the trail was
+    # invisible from HYDOR onward however its colour was chosen. A continuous
+    # stroke groups into a shape the eye can separate from the noise.
+    for i in range(1, len(trail)):
+        (x0, y0, th0), (x1, y1, _) = trail[i - 1], trail[i]
+        f = (i / n) ** 1.6
+        if not TWIN_TRAIL:
+            d.line([x0, y0, x1, y1], fill=strand(f, 1.0))
+            continue
+        # Two horses. Whichever is being obeyed leads; the other lags and runs
+        # weaker. Divergence grows with age, so they part behind the player.
+        s0 = TRAIL_BASE + (n - i + 1) * TRAIL_SPREAD
+        s1 = TRAIL_BASE + (n - i) * TRAIL_SPREAD
+        up, down = (1.0, 0.35) if th0 else (0.35, 1.0)
+        d.line([x0, y0 - s0, x1, y1 - s1], fill=strand(f, up))
+        d.line([x0, y0 + s0, x1, y1 + s1], fill=strand(f, down))
 
     # Bright core inside a dark halo: reads against rock and against full sun.
     d.ellipse([PLAYER_X - 3, py - 3, PLAYER_X + 3, py + 3], fill=tuple(rock))
@@ -376,8 +413,11 @@ def simulate(seed, seconds, fps=50, render=True, render_at=None):
             # PLAYER_X, as this originally did, draws a vertical smear under the
             # player instead of a trail behind it. Updated every step even when
             # this frame is not drawn, so a drawn frame has a correct history.
-            trail = [(tx - columns, ty) for tx, ty in trail if tx - columns >= 0]
-            trail.append((PLAYER_X, int(py)))
+            # Each point remembers whether the button was held when it was laid
+            # down, which is what lets the two strands take turns leading.
+            trail = [(tx - columns, ty, th) for tx, ty, th in trail
+                     if tx - columns >= 0]
+            trail.append((PLAYER_X, int(py), thrust))
             trail = trail[-40:]
             if render_at is None or step_i in render_at:
                 out.append(draw_frame(cave, py, trail, dist, flash))
