@@ -94,8 +94,9 @@ const REGIONS=[
   {name:"ΠΥΡ",label:"ΠΥΡ",from:29500,light:29,rock:[15,7,4],glow:[236,116,36]},  // 11 return
   {name:"ΣΚΙΑΙ",label:"ΣΚΙΑΙ",from:31300,light:15,rock:[6,7,11],glow:[78,88,104]},  // 12 return
 ];
-const SPEED_START=55.0,SPEED_END=100.0,SPEED_RAMP_END=16000,SPEED_DESC_END=145.0;
-const GAP_START=0.48,GAP_MIN=0.21,GAP_RAMP_END=12000,GAP_DESC_MIN=0.15;
+const SPEED_START=55.0,STEP_SPAN=120;
+const REGION_GAP=[0.48,0.42,0.37,0.33,0.29,0.26,0.23,0.215,0.2,0.185,0.17,0.16,0.15];
+const REGION_SPEED=[55.0,66.0,76.0,84.0,91.0,97.0,103.0,110.0,117.0,124.0,131.0,138.0,145.0];
 const DESCENT_START=19000,WIN_DIST=33000;
 const GRAVITY=5.0,THRUST=-7.5,VY_MAX=1.0;
 const DRIFT_STEP=0.42,DRIFT_CLAMP=2.6,DRIFT_DAMP=0.94;
@@ -147,16 +148,16 @@ function descentProgress(d) {
   return d <= DESCENT_START ? 0
     : Math.min(1, (d - DESCENT_START) / (WIN_DIST - DESCENT_START));
 }
-function speedAt(d) {
-  return d <= SPEED_RAMP_END
-    ? SPEED_START + (SPEED_END - SPEED_START) * (d / SPEED_RAMP_END)
-    : SPEED_END + (SPEED_DESC_END - SPEED_END) * descentProgress(d);
+// Difficulty steps per region, eased in over STEP_SPAN at each boundary.
+// Must match cave.py's _stepped().
+function stepped(table, d) {
+  const i = regionIndex(d);
+  if (i === 0) return table[0];
+  const t = Math.min(1, (d - REGIONS[i].from) / STEP_SPAN);
+  return table[i - 1] + (table[i] - table[i - 1]) * t;
 }
-function gapAt(d) {
-  const t = Math.min(1, d / GAP_RAMP_END);
-  return H * (GAP_START - (GAP_START - GAP_MIN) * t
-              - (GAP_MIN - GAP_DESC_MIN) * descentProgress(d));
-}
+function speedAt(d) { return stepped(REGION_SPEED, d); }
+function gapAt(d) { return H * stepped(REGION_GAP, d); }
 function regionAt(d) {
   let r = REGIONS[0];
   for (const c of REGIONS) if (d >= c.from) r = c;

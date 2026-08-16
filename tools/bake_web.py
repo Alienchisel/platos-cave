@@ -42,10 +42,9 @@ def emit():
         BEGIN,
         f"const W={cave.W},H={cave.H};",
         js_regions(),
-        f"const SPEED_START={cave.SPEED_START},SPEED_END={cave.SPEED_END},"
-        f"SPEED_RAMP_END={cave.SPEED_RAMP_END},SPEED_DESC_END={cave.SPEED_DESC_END};",
-        f"const GAP_START={cave.GAP_START},GAP_MIN={cave.GAP_MIN},"
-        f"GAP_RAMP_END={cave.GAP_RAMP_END},GAP_DESC_MIN={cave.GAP_DESC_MIN};",
+        f"const SPEED_START={cave.SPEED_START},STEP_SPAN={cave.STEP_SPAN};",
+        "const REGION_GAP=[" + ",".join(str(v) for v in cave.REGION_GAP) + "];",
+        "const REGION_SPEED=[" + ",".join(str(v) for v in cave.REGION_SPEED) + "];",
         f"const DESCENT_START={cave.DESCENT_START},WIN_DIST={cave.WIN_DIST};",
         f"const GRAVITY={cave.GRAVITY},THRUST={cave.THRUST},VY_MAX={cave.VY_MAX};",
         "const DRIFT_STEP=0.42,DRIFT_CLAMP=2.6,DRIFT_DAMP=0.94;",

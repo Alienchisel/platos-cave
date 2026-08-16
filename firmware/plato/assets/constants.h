@@ -9,22 +9,25 @@
 // Frame-rate independence is verified in the Python model across
 // 30-144 fps; keep it that way -- per-frame rates put the sun at 25 s
 // on a 50 fps device and 14 s on a 90 fps one.
-constexpr float SPEED_START    = 55.0f;   // columns/second at distance 0
-constexpr float SPEED_END      = 100.0f;  // columns/second once ramped
-constexpr float SPEED_RAMP_END = 16000.0f;
-constexpr float GAP_START      = 0.480f;  // fraction of panel height
-constexpr float GAP_MIN        = 0.210f;
-constexpr float GAP_RAMP_END   = 12000.0f;
+constexpr float SPEED_START = 55.0f;   // columns/second in the first region
+// Difficulty steps PER REGION rather than ramping across the whole
+// run. Under continuous ramps a typical run met 17% of the
+// narrowing and 8% of the acceleration before it ended -- the
+// regions were colours, not difficulties. Front-loaded, because
+// real play ends around region 3.
+//
+// A step eases in over STEP_SPAN rather than snapping: instant
+// would narrow the passage around a player already committed.
+constexpr float STEP_SPAN = 120.0f;
+inline constexpr float REGION_GAP[REGION_COUNT] = {0.480f, 0.420f, 0.370f, 0.330f, 0.290f, 0.260f, 0.230f, 0.215f, 0.200f, 0.185f, 0.170f, 0.160f, 0.150f};   // * H
+inline constexpr float REGION_SPEED[REGION_COUNT] = {55.0f, 66.0f, 76.0f, 84.0f, 91.0f, 97.0f, 103.0f, 110.0f, 117.0f, 124.0f, 131.0f, 138.0f, 145.0f};  // col/s
 
 // ---- the return -------------------------------------------------
-// Republic ~516e-517a. Both ascent levers are spent by the sun --
-// the gap floors at GAP_RAMP_END, the speed caps at SPEED_RAMP_END --
-// so the descent uncaps them rather than repeating the climb.
-constexpr float SUN_HOLD       = 3000.0f;   // distance held at the sun before turning back
-constexpr float DESCENT_START  = 19000.0f;
-constexpr float SPEED_DESC_END = 145.0f;  // columns/second at the chains
-constexpr float GAP_DESC_MIN   = 0.150f;  // fraction of H
-constexpr float WIN_DIST       = 33000.0f;   // reaching this completes the game
+// Republic ~516e-517a. The return continues the same per-region
+// steps past the sun, tighter and faster than any ascent region.
+constexpr float SUN_HOLD      = 3000.0f;   // distance held at the sun before turning back
+constexpr float DESCENT_START = 19000.0f;
+constexpr float WIN_DIST      = 33000.0f;   // reaching this completes the game
 
 // The closing view: the returning eye cannot see far. Applied AFTER
 // the rock edge is drawn, so the edge is occluded too -- otherwise

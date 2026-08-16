@@ -47,28 +47,31 @@ def emit() -> str:
          "// 30-144 fps; keep it that way -- per-frame rates put the sun at 25 s\n"
          "// on a 50 fps device and 14 s on a 90 fps one.\n"]
 
-    p.append(f"constexpr float SPEED_START    = {cave.SPEED_START:.1f}f;"
-             "   // columns/second at distance 0\n")
-    p.append(f"constexpr float SPEED_END      = {cave.SPEED_END:.1f}f;"
-             "  // columns/second once ramped\n")
-    p.append(f"constexpr float SPEED_RAMP_END = {cave.SPEED_RAMP_END}.0f;\n")
-    p.append(f"constexpr float GAP_START      = {cave.GAP_START:.3f}f;"
-             "  // fraction of panel height\n")
-    p.append(f"constexpr float GAP_MIN        = {cave.GAP_MIN:.3f}f;\n")
-    p.append(f"constexpr float GAP_RAMP_END   = {cave.GAP_RAMP_END}.0f;\n\n")
+    p.append(f"constexpr float SPEED_START = {cave.SPEED_START:.1f}f;"
+             "   // columns/second in the first region\n")
+    p.append("// Difficulty steps PER REGION rather than ramping across the whole\n"
+             "// run. Under continuous ramps a typical run met 17% of the\n"
+             "// narrowing and 8% of the acceleration before it ended -- the\n"
+             "// regions were colours, not difficulties. Front-loaded, because\n"
+             "// real play ends around region 3.\n"
+             "//\n"
+             "// A step eases in over STEP_SPAN rather than snapping: instant\n"
+             "// would narrow the passage around a player already committed.\n")
+    p.append(f"constexpr float STEP_SPAN = {cave.STEP_SPAN}.0f;\n")
+    p.append("inline constexpr float REGION_GAP[REGION_COUNT] = {"
+             + ", ".join(f"{v:.3f}f" for v in cave.REGION_GAP)
+             + "};   // * H\n")
+    p.append("inline constexpr float REGION_SPEED[REGION_COUNT] = {"
+             + ", ".join(f"{v:.1f}f" for v in cave.REGION_SPEED)
+             + "};  // col/s\n\n")
 
     p.append("// ---- the return -------------------------------------------------\n"
-             "// Republic ~516e-517a. Both ascent levers are spent by the sun --\n"
-             "// the gap floors at GAP_RAMP_END, the speed caps at SPEED_RAMP_END --\n"
-             "// so the descent uncaps them rather than repeating the climb.\n")
-    p.append(f"constexpr float SUN_HOLD       = {cave.SUN_HOLD}.0f;"
+             "// Republic ~516e-517a. The return continues the same per-region\n"
+             "// steps past the sun, tighter and faster than any ascent region.\n")
+    p.append(f"constexpr float SUN_HOLD      = {cave.SUN_HOLD}.0f;"
              "   // distance held at the sun before turning back\n")
-    p.append(f"constexpr float DESCENT_START  = {cave.DESCENT_START}.0f;\n")
-    p.append(f"constexpr float SPEED_DESC_END = {cave.SPEED_DESC_END:.1f}f;"
-             "  // columns/second at the chains\n")
-    p.append(f"constexpr float GAP_DESC_MIN   = {cave.GAP_DESC_MIN:.3f}f;"
-             "  // fraction of H\n")
-    p.append(f"constexpr float WIN_DIST       = {cave.WIN_DIST}.0f;"
+    p.append(f"constexpr float DESCENT_START = {cave.DESCENT_START}.0f;\n")
+    p.append(f"constexpr float WIN_DIST      = {cave.WIN_DIST}.0f;"
              "   // reaching this completes the game\n\n")
 
     p.append("// The closing view: the returning eye cannot see far. Applied AFTER\n"
@@ -181,7 +184,6 @@ def emit() -> str:
 NOT_BAKED = {
     "W", "H", "PLAYER_X",                      # set by configure(), not fixed
     "LIGHT_FLOOR",                             # already applied to REGIONS
-    "SPEED_RAMP_END", "GAP_RAMP_END",          # emitted under those names
 }
 
 
