@@ -138,6 +138,56 @@ Dying on the way up and dying on the way back are not the same event.
 freed you are not a prisoner any more, so the word changes, and so does the
 colour. *This resolves the death-screen question that stood in §10.*
 
+### Where the death word lands
+
+The word is held for `DEATH_HOLD` (1.1 s) **over the frozen frame you died on**,
+dimmed, with the impact ringed — then the stats card follows. A press skips the
+hold, but that press does *not* also advance past it; otherwise one impatient tap
+eats the screen and you never learn what you hit.
+
+This is the Dark Souls staging, and it is doing two jobs. The first is the beat.
+The second is legibility: **a death whose cause you can see reads as your own
+fault, and that is the precondition for pressing again.** A death that cuts
+straight to a black stats screen reads as arbitrary, and arbitrary deaths end
+sessions.
+
+⚠ **The band must go in the half the body is not in.** Centred — the obvious
+first implementation, and the one we built — the word covers the ring it exists
+to reveal. It is placed low when the impact is high and high when it is low.
+
+The return death is a happy accident: ΤΥΦΛΟΣ lands on a frame already darkening
+from the closing view, so the screen is going blind as the word says so.
+
+### In-tunnel markers
+
+Every score above you is a **distance**, so it can be drawn in the world instead
+of on a menu: marks scored into the rock on both walls at that distance, with the
+initials beside them. Your own best is cream and doubled; rivals are single, in
+the region's glow. Passing one is announced as **ΠΑΡΗΛΘΕΣ** — "you have passed",
+a formation for this project like ΟΙ ΛΥΘΕΝΤΕΣ, not a quotation.
+
+Two constraints fix the shape, and both are load-bearing:
+
+- **In the rock, never across the passage.** The rock stays near-black in every
+  region while the passage runs from near-dark to blazing, so the rock is the
+  only surface here with contrast at *every* light level — a tick still reads at
+  ΗΛΙΟΣ, where the passage is almost solid cream. The variant drawn across the
+  passage failed twice over: it competes with the thing that kills you, and
+  against the dither a dotted line barely reads at all.
+- **Occluded by the closing view.** Drawn before the descent gradient, so the
+  return takes the marks along with your forward sight.
+
+The bottom-left readout carries the chase the rest of the time, and does most of
+the work: 199 px of forward view is about two seconds, so the target is
+off-screen far more often than on it.
+
+Markers are armed on the first *playing* frame rather than at reset, because a
+region jump moves the distance afterwards — without that, a practice run
+starting at 31300 would announce eight overtakes on the way in.
+
+*Why this and not more difficulty: under the old build everything you were
+chasing lived on menus, visible only once the run was over.*
+
 ### Region texture
 
 Two of the seven regions name something that **moves**, so they get more than a

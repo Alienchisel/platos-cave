@@ -110,6 +110,9 @@ const BAYER=[0,128,32,159,8,135,40,167,191,64,223,96,199,72,231,104,48,175,16,14
 
 const PLAYER_X = Math.max(8, Math.round(W * PLAYER_X_FRAC));
 const DT_CLAMP = 0.05;          // one slow frame must not teleport the player
+// Presentation, not physics, so these stay out of cave.py and the bake.
+const DEATH_HOLD = 1.1;         // s the frozen death frame is held; a press skips it
+const MARK_SPAN = 6;            // px a marker bites into the rock, each wall
 
 // Live-tunable copies of the four constants the hardware cannot yet answer for.
 // Physics reads TUNE, never the baked values, so the sliders below are the real
@@ -224,7 +227,9 @@ function reset(seed) {
   const s = seed ?? URL_SEED ?? (Math.random() * 1e9 | 0);
   S = { seed: s, cave: new Cave(s),
         py: H / 2, vy: 0, dist: 0, acc: 0, trail: [],
-        banner: null, flashT: 0, t: 0, state: 'ready', best: loadMyBest() };
+        banner: null, flashT: 0, capt: null, captT: 0, t: 0, state: 'ready',
+        best: loadMyBest(), targets: buildTargets(), armed: false,
+        deadT: 0, hitY: H / 2 };
 }
 // ΟΙ ΛΥΘΕΝΤΕΣ -- "those who were released". Seeded with the Neoplatonists above
 // the Republic's cast, because the cast were never released: they sat in a house
@@ -263,6 +268,16 @@ function loadIni() {
 }
 function saveIni(ini) { localStorage.setItem('pc_ini', ini.join('')); }
 
+// Everything worth chasing, as distances: the table plus your own best. Built
+// once per run -- the table cannot change mid-flight, and rebuilding it every
+// frame would read localStorage sixty times a second.
+function buildTargets() {
+  const t = loadScores().map(r => ({ at: r.dist, ini: r.ini, mine: false }));
+  const mine = loadMyBest();
+  if (mine > 0) t.push({ at: mine, ini: loadIni().join(''), mine: true });
+  return t.sort((a, b) => a.at - b.at);
+}
+
 // The lowest entry still above you: the next name to beat.
 function nextAbove(d) {
   return loadScores().filter(r => r.dist > d).sort((a, b) => a.dist - b.dist)[0] || null;
@@ -288,6 +303,10 @@ function press() {
   if (S.state === 'play') { held = true; return; }
   // 'initials' resolves on release, since it needs the press duration.
   if (S.state === 'dead' || S.state === 'won') {
+    // The frozen frame is skippable, but the press that skips it must not also
+    // advance past it -- otherwise one impatient tap eats the death screen
+    // whole and you never learn what you hit.
+    if (S.deadT < DEATH_HOLD) { S.deadT = DEATH_HOLD; return; }
     if (S.pending) { S.pending = false; S.state = 'initials'; S.slot = 0;
                      S.ini = loadIni(); }
     else reset();
@@ -341,6 +360,52 @@ const rgb = c => `rgb(${c[0]|0},${c[1]|0},${c[2]|0})`;
 const mixTo = (c, t, f) => [c[0] + (t[0] - c[0]) * f, c[1] + (t[1] - c[1]) * f,
                             c[2] + (t[2] - c[2]) * f];
 
+// Marks scored into the rock on both walls -- never across the passage.
+//
+// Two reasons for that shape. The rock stays near-black in every region while
+// the passage runs from near-dark to blazing, so the rock is the only surface
+// on this screen with contrast at every light level: a tick still reads at
+// ΗΛΙΟΣ where the passage is almost solid cream. And nothing drawn between the
+// walls can be mistaken for the thing that kills you.
+function drawMarkers(glow) {
+  g.font = '9px ui-monospace,Consolas,monospace';
+  g.textAlign = 'center'; g.textBaseline = 'top';
+  for (const m of S.targets) {
+    const dx = m.at - S.dist;
+    if (dx < 0 || dx > W - PLAYER_X - 2) continue;
+    const x = Math.round(PLAYER_X + dx);
+    const [top, bot] = S.cave.bounds(x);
+    const t = top | 0, b = bot | 0;
+    const col = m.mine ? '#fff6d6' : rgb(glow);
+    line(g, x, Math.max(0, t - MARK_SPAN), x, t - 1, col);
+    line(g, x, b + 1, x, Math.min(H - 1, b + MARK_SPAN), col);
+    // Your own line is doubled as well as cream: at this size one colour
+    // difference is not enough to tell it from a rival at a glance.
+    if (m.mine) for (const o of [-2, 2]) {
+      line(g, x + o, Math.max(0, t - MARK_SPAN + 2), x + o, t - 1, col);
+      line(g, x + o, b + 1, x + o, Math.min(H - 1, b + MARK_SPAN - 2), col);
+    }
+    g.fillStyle = col;
+    if (t - MARK_SPAN - 10 >= 0) g.fillText(m.ini, x, t - MARK_SPAN - 10);
+    else if (b + MARK_SPAN + 11 < H) g.fillText(m.ini, x, b + MARK_SPAN + 1);
+  }
+}
+
+// Whoever is next above you, and how far. This carries the chase most of the
+// time: 199 px of forward view is about two seconds, so a target is off-screen
+// far more often than on it.
+function drawChase() {
+  const m = S.targets.find(q => q.at > S.dist);
+  if (!m) return;
+  g.font = '9px ui-monospace,Consolas,monospace';
+  g.textAlign = 'left'; g.textBaseline = 'top';
+  const txt = `${m.ini} ${Math.round(m.at - S.dist)}`;
+  g.fillStyle = 'rgba(0,0,0,.72)';
+  g.fillRect(2, H - 13, g.measureText(txt).width + 5, 12);
+  g.fillStyle = m.mine ? '#fff6d6' : '#aaaaaf';
+  g.fillText(txt, 4, H - 12);
+}
+
 function draw() {
   const reg = regionAt(S.dist);
   let light = reg.light / 255;
@@ -375,6 +440,10 @@ function draw() {
     g.moveTo(x + .5, (bot | 0) + .5); g.lineTo(x + 1.5, (bot | 0) + .5);
   }
   g.stroke();
+
+  // Before the occlusion, so the closing view swallows the markers too. The
+  // descent takes your forward sight away; it should take the marks with it.
+  drawMarkers(glow);
 
   // The closing view, applied after the edge so the edge is occluded too.
   const occ = descentProgress(S.dist);
@@ -423,12 +492,20 @@ function draw() {
     const w = g.measureText(reg.name).width;
     g.fillStyle = rgb(rock); g.fillRect(W / 2 - w / 2 - 4, H - 27, w + 8, 15);
     g.fillStyle = rgb(glow); g.fillText(reg.name, W / 2, H - 26);
+  } else if (S.captT > 0) {
+    // Shares the region slot rather than taking the big centre banner: you can
+    // pass nine names in a run, and nine full-screen captions across the flight
+    // path would be an obstruction, not an event.
+    const w = g.measureText(S.capt).width;
+    g.fillStyle = rgb(rock); g.fillRect(W / 2 - w / 2 - 4, H - 27, w + 8, 15);
+    g.fillStyle = '#fff6d6'; g.fillText(S.capt, W / 2, H - 26);
   }
+  if (S.state === 'play' || S.state === 'ready') drawChase();
 
   if (S.state === 'ready') readyCard();
   else if (S.state === 'initials') initialsCard();
   else if (S.state === 'scores') scoresCard();
-  else if (S.state !== 'play') endCard(reg);
+  else if (S.state !== 'play') { if (S.deadT < DEATH_HOLD) impactCard(); else endCard(reg); }
   vx.drawImage(buf, 0, 0, view.width, view.height);
 }
 
@@ -499,11 +576,45 @@ function readyCard() {
   g.fillStyle = '#c8c8d2'; g.fillText('HOLD TO CLIMB', W / 2, H / 2 + 18);
 }
 
+// Two deaths, not one. Climbing, you are still a prisoner; returning, your eyes
+// are full of darkness (Republic 516e). Shared by both end screens so the word
+// cannot drift between them.
+function deathWord() {
+  if (S.state === 'won') return ['ΚΑΤΕΒΗΝ', 'I WENT DOWN', '#eeeef5'];
+  return S.dist >= DESCENT_START ? ['ΤΥΦΛΟΣ', 'BLIND', '#c4cae2']
+                                 : ['ΔΕΣΜΩΤΗΣ', 'PRISONER', '#e87424'];
+}
+
+// The word over the frame you died on, not over a black screen. It does two
+// jobs at once: the beat, and the reason. A death whose cause you can see reads
+// as your own fault, and that is the precondition for pressing again.
+function impactCard() {
+  const [word, gloss, hue] = deathWord();
+  g.fillStyle = 'rgba(0,0,0,.58)'; g.fillRect(0, 0, W, H);
+
+  if (S.state !== 'won') {
+    g.strokeStyle = '#fff';
+    for (const r of [7, 8]) {
+      g.beginPath(); g.arc(PLAYER_X, S.hitY, r, 0, 7); g.stroke();
+    }
+    line(g, PLAYER_X - 13, S.hitY, PLAYER_X - 9, S.hitY, '#fff');
+    line(g, PLAYER_X + 9, S.hitY, PLAYER_X + 13, S.hitY, '#fff');
+  }
+
+  // The band goes in the half the body is not in. Centred, it covers the ring
+  // it exists to reveal -- which is what the first version did.
+  const y = (S.state === 'won' || S.hitY < H / 2) ? H - 38 : 5;
+  g.fillStyle = '#000'; g.fillRect(0, y - 4, W, 38);
+  g.textAlign = 'center'; g.textBaseline = 'top';
+  g.font = '20px ui-monospace,Consolas,monospace';
+  g.fillStyle = hue; g.fillText(word, W / 2, y);
+  g.font = '9px ui-monospace,Consolas,monospace';
+  g.fillStyle = '#78788a'; g.fillText(gloss, W / 2, y + 24);
+}
+
 function endCard(reg) {
   const won = S.state === 'won';
-  const word = won ? 'ΚΑΤΕΒΗΝ' : (S.dist >= DESCENT_START ? 'ΤΥΦΛΟΣ' : 'ΔΕΣΜΩΤΗΣ');
-  const gloss = won ? 'I WENT DOWN' : (S.dist >= DESCENT_START ? 'BLIND' : 'PRISONER');
-  const hue = won ? '#eeeef5' : (S.dist >= DESCENT_START ? '#c4cae2' : '#e87424');
+  const [word, gloss, hue] = deathWord();
   g.fillStyle = 'rgba(0,0,0,.72)'; g.fillRect(0, 0, W, H);
   g.textAlign = 'center';
   g.font = '20px ui-monospace,Consolas,monospace';
@@ -546,7 +657,12 @@ function frame(now) {
     const [t0, b0] = S.cave.bounds(PLAYER_X);
     S.py = (t0 + b0) / 2; S.vy = 0;
   }
+  if (S.state === 'dead' || S.state === 'won') S.deadT += dt;
   if (S.state === 'play') {
+    // Armed on the first playing frame, not at reset: a region jump moves dist
+    // afterwards, and without this every target below the jump would announce
+    // itself as passed on the way in.
+    if (!S.armed) { S.targets.forEach(m => { m.done = S.dist >= m.at; }); S.armed = true; }
     S.t += dt;
     S.vy += (held ? TUNE.thrust : TUNE.gravity) * H * dt;
     S.vy = clamp(S.vy, -TUNE.vyMax * H, TUNE.vyMax * H);
@@ -565,6 +681,14 @@ function frame(now) {
       S.flashT -= dt; if (S.flashT <= 0) S.banner = null;
     }
 
+    // ΠΑΡΗΛΘΕΣ -- "you have passed". A formation for this project, like
+    // ΟΙ ΛΥΘΕΝΤΕΣ, not a quotation from the text. Practice runs stay silent:
+    // starting at 31300 would announce eight overtakes you did not make.
+    let passed = null;
+    for (const m of S.targets) if (!m.done && S.dist >= m.at) { m.done = true; passed = m; }
+    if (passed && !S.practice) { S.capt = 'ΠΑΡΗΛΘΕΣ'; S.captT = 1.0; }
+    else if (S.captT > 0) S.captT -= dt;
+
     S.trail = S.trail.map(p => [p[0] - cols, p[1], p[2]]).filter(p => p[0] >= 0);
     S.trail.push([PLAYER_X, S.py | 0, held]);
     if (S.trail.length > TRAIL_LEN) S.trail.shift();
@@ -573,6 +697,7 @@ function frame(now) {
     const over = S.py < top || S.py > bot;
     if (over || S.dist >= WIN_DIST) {
       S.state = over ? 'dead' : 'won';
+      S.hitY = clamp(S.py, 4, H - 4); S.deadT = 0;
       // Every run counts toward your own best, whether or not it makes the
       // table -- otherwise early progress is invisible until you beat ΘΡΑ.
       // Except practice runs, which started partway up and did not earn it.

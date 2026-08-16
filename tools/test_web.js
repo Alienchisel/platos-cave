@@ -61,15 +61,19 @@ let clock = 0;
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 vm.runInContext(js + `
+// Captured before noDraw() replaces the binding, so the smoke test can still
+// reach the real renderer.
+const __draw = draw;
 globalThis.__t = {
+  smokeDraw: () => __draw(),
   frame, reset, press, regionAt, speedAt, gapAt,
   get S() { return S; },
   setHeld(v) { held = v; }, setLast(v) { last = v; },
   noDraw() { draw = () => {}; hud = () => {}; },
   release, loadScores, saveScores, qualifies, commitScore, loadIni,
-  loadMyBest, noteRun, nextAbove,
+  loadMyBest, noteRun, nextAbove, buildTargets,
   REGIONS, WIN_DIST, DESCENT_START, ASCENT_COUNT, PLAYER_X, W, H,
-  TABLE_LEN, ALPHABET, LONG_MS,
+  TABLE_LEN, ALPHABET, LONG_MS, DEATH_HOLD,
 };`, sandbox);
 
 const T = sandbox.__t;
@@ -233,6 +237,7 @@ const hold = () => { clock += 10; T.press(); clock += T.LONG_MS + 60; T.release(
 function toEntry(dist) {
   T.reset(3); T.setLast(0); T.press();
   T.S.dist = dist; T.S.state = 'dead'; T.S.pending = true;
+  T.S.deadT = T.DEATH_HOLD;          // past the frozen frame; see section 8
   clock += 1000; T.press();
 }
 
@@ -265,6 +270,87 @@ for (const bad of ['', 'ΑΒ', 'ΑΒΓΔ', 'ABC', 'ΑΒς', '{not json']) {
   ok(T.loadIni().join('') === 'ΑΑΑ', `${JSON.stringify(bad)} falls back to ΑΑΑ`);
 }
 delete store['pc_ini'];
+
+// 8. The frozen death frame. It has to be skippable, but the press that skips
+//    it must not also advance past it, or one impatient tap eats the screen.
+console.log('\nfrozen death frame:');
+T.reset(3); T.setLast(0); T.press();
+T.S.dist = 5000; T.S.state = 'dead'; T.S.pending = true; T.S.deadT = 0;
+clock += 10; T.press();
+ok(T.S.state === 'dead', `a press during the hold does not advance (${T.S.state})`);
+ok(T.S.deadT >= T.DEATH_HOLD, 'but it does skip the hold');
+clock += 10; T.press();
+ok(T.S.state === 'initials', `the next press opens entry (${T.S.state})`);
+// A non-qualifying death must still reach a fresh run in two presses.
+T.reset(3); T.setLast(0); T.press();
+T.S.dist = 100; T.S.state = 'dead'; T.S.pending = false; T.S.deadT = T.DEATH_HOLD;
+clock += 10; T.press();
+ok(T.S.state === 'ready', `a held-out death restarts on one press (${T.S.state})`);
+
+// 9. Chase targets: the table plus your own best, in ascending order.
+console.log('\nin-tunnel markers:');
+delete store['pc_mybest']; delete store['pc_scores']; delete store['pc_ini'];
+let tg = T.buildTargets();
+ok(tg.length === T.TABLE_LEN, `no personal best yet: ${T.TABLE_LEN} targets (${tg.length})`);
+ok(tg.every((m, i) => i === 0 || tg[i - 1].at <= m.at), 'targets are sorted ascending');
+ok(tg.every(m => !m.mine), 'none of the seeded names is marked as yours');
+T.noteRun(1500); store['pc_ini'] = 'ΧΑΡ';
+tg = T.buildTargets();
+const mine = tg.filter(m => m.mine);
+ok(mine.length === 1 && mine[0].at === 1500 && mine[0].ini === 'ΧΑΡ',
+   `your best joins the targets as ΧΑΡ 1500 (${mine.map(m => m.ini + ' ' + m.at)})`);
+// Armed on the first playing frame, so a practice start does not fire eight
+// overtakes on the way in.
+T.reset(3); T.S.dist = 20000; T.S.practice = true; T.setLast(0); T.press();
+T.setHeld(true); T.frame(20);
+ok(T.S.targets.filter(m => m.at < 20000).every(m => m.done),
+   'targets below a jumped start are armed as already passed');
+ok(!T.S.capt, 'and no overtake is announced for them');
+delete store['pc_mybest']; delete store['pc_ini'];
+
+// 10. Render smoke. Every other test stubs drawing out for speed, which means
+//     the renderer -- the largest body of code here -- is otherwise never run
+//     at all. The canvas is a stub, so this proves the paths execute, not that
+//     they look right; the PIL mockups are what settle appearance.
+console.log('\nrender smoke (real draw(), stub canvas):');
+function smoke(what, setup) {
+  T.reset(3); T.setLast(0); T.press();
+  T.S.dist = 3000;
+  setup(T.S);
+  let err = null;
+  try { T.smokeDraw(); } catch (e) { err = e; }
+  ok(!err, `${what}${err ? ' -- ' + err.message : ''}`);
+}
+for (const st of ['ready', 'play', 'scores']) smoke(`draw() in '${st}'`, S => S.state = st);
+smoke("draw() in 'initials'",
+      S => { S.state = 'initials'; S.slot = 0; S.ini = ['Α', 'Α', 'Α']; });
+// Both band positions: the word moves to the half the body is not in.
+smoke('impact card, body high', S => { S.state = 'dead'; S.deadT = 0; S.hitY = 20; });
+smoke('impact card, body low', S => { S.state = 'dead'; S.deadT = 0; S.hitY = 115; });
+smoke('impact card on a win',
+      S => { S.state = 'won'; S.dist = T.WIN_DIST; S.deadT = 0; });
+smoke('stats card after the hold',
+      S => { S.state = 'dead'; S.deadT = T.DEATH_HOLD + 1; });
+// A marker on screen, one off it, and one of each ownership.
+smoke('markers on screen', S => {
+  S.state = 'play';
+  S.targets = [{ at: 3050, ini: 'ΓΛΑ', mine: false, done: false },
+               { at: 3150, ini: 'ΧΑΡ', mine: true, done: false },
+               { at: 9999, ini: 'ΠΛΩ', mine: false, done: false }];
+});
+// A marker whose walls sit hard against the panel edge: the label has nowhere
+// to go and the ticks clip. It must still draw.
+smoke('marker with no room for a label', S => {
+  S.state = 'play';
+  S.cave.cols = S.cave.cols.map(() => [T.H / 2, T.H * 0.98]);
+  S.targets = [{ at: 3050, ini: 'ΓΛΑ', mine: true, done: false }];
+});
+smoke('overtake caption', S => { S.state = 'play'; S.capt = 'ΠΑΡΗΛΘΕΣ'; S.captT = 1; });
+// The descent, where the occlusion gradient and the markers coincide.
+smoke('markers under the closing view', S => {
+  S.state = 'play'; S.dist = 26000;
+  S.targets = [{ at: 26060, ini: 'ΔΑΜ', mine: false, done: false }];
+});
 
 // 7. Not a pass/fail -- a difficulty reading. A lookahead controller aiming at
 //    the tightest point in the window ahead is a decent proxy for a good human.
