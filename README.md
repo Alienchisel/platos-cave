@@ -204,10 +204,12 @@ socket, a case that physically cannot contain a battery, and no speaker.
 
 ## Credits
 
-- **3D scan** (`mesh/plato.glb`), used by the archived point-cloud tools:
-  *Plato*, Fitzwilliam Museum, object GR.23.1850, via
+- **3D scan** — *Plato*, Fitzwilliam Museum, object GR.23.1850, via
   [Sketchfab](https://sketchfab.com/3d-models/plato-1df8376b55e347fb9bb4cf49375d6e5a),
-  CC BY 4.0.
+  CC BY 4.0. The game does not use it: the title bust is dithered from the
+  photograph below. The scan is credited because
+  `firmware/plato_tqt/plato_points.h` — 8,872 points, committed — was sampled
+  from it, so this line belongs to that file and should outlive it by nothing.
 - **The sculpture** throughout is the Vatican Museums' herm of Plato, Museo
   Pio-Clementino, Sala delle Muse, Inv. 305 — a Roman copy after a Greek
   original of the late 4th century BC. Its base is inscribed ΖΗΝΩΝ.
