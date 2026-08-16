@@ -168,9 +168,21 @@ This is not hypothetical tidiness. Earlier in this project the same values lived
 in both `preview.py` and `plato_tqt.ino` with only a comment asking future
 editors to keep them in sync — and they drifted within a day.
 
-Two links enforce it now: `bake_constants.py` imports `cave.py` directly, and it
-imports the label list from `bake_assets.py` so a stage cannot reference a label
-that was never baked — it fails loudly instead of emitting a dangling index.
+Three links enforce it now:
+
+1. `bake_constants.py` imports `cave.py` directly, so no value is retyped.
+2. It imports the label list from `bake_assets.py`, so a region cannot reference
+   a label that was never baked — it fails loudly instead of emitting a dangling
+   index.
+3. **A completeness guard.** After emitting, it enumerates every ALL-CAPS numeric
+   constant in `cave.py` and reports any that never reached the header. The
+   default is "must be exported"; `NOT_BAKED` is the explicit opt-out.
+
+The third exists because the same mistake happened **three times** — descent
+constants, trail constants, region-texture constants — each added to `cave.py`
+and silently left out of the export, each caught only by chance later. A comment
+asking future editors to remember is precisely what had already failed, so the
+check is mechanical.
 
 ---
 
