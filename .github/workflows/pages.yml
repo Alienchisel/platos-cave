@@ -39,7 +39,7 @@ jobs:
       # every screen state, so a broken build fails here instead of shipping.
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
       - name: Check the build against the reference model
         run: node tools/test_web.js
 
