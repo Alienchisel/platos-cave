@@ -50,14 +50,14 @@ source, which supplies its colour.
 | # | Stage | Meaning | Light | Distance | Reached at | Interval |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | **ΣΚΙΑΙ** | shadows on the wall | cold grey-blue, near-dark | 0 | 0 s | — |
-| 2 | **ΠΥΡ** | the fire behind the prisoners | orange | 700 | 12.5 s | +12.5 |
-| 3 | **ΕΙΔΩΛΑ** | the carried images | amber-gold | 1 800 | 31.3 s | +18.8 |
-| 4 | **ΥΔΩΡ** | reflections in water | cyan | 3 400 | 57.0 s | +25.7 |
-| 5 | **ΑΣΤΡΑ** | the stars | indigo | 6 000 | 95.1 s | +38.2 |
-| 6 | **ΣΕΛΗΝΗ** | the moon | pale silver-blue | 9 900 | 145.6 s | +50.5 |
-| 7 | **ΗΛΙΟΣ** | the sun | white-gold | 16 000 | 212.6 s | +66.9 |
+| 2 | **ΠΥΡ** | the fire behind the prisoners | orange | 700 | 12.7 s | +12.7 |
+| 3 | **ΕΙΔΩΛΑ** | the carried images | amber-gold | 1 800 | 29.6 s | +16.8 |
+| 4 | **ΥΔΩΡ** | reflections in water | cyan | 3 400 | 50.7 s | +21.2 |
+| 5 | **ΑΣΤΡΑ** | the stars | indigo | 6 000 | 81.8 s | +31.0 |
+| 6 | **ΣΕΛΗΝΗ** | the moon | pale silver-blue | 9 900 | 124.7 s | +42.9 |
+| 7 | **ΗΛΙΟΣ** | the sun | white-gold | 16 000 | 187.6 s | +62.9 |
 
-Each stage takes 32–50% longer than the one before, so the sun is a 3½-minute
+Each stage takes 26–47% longer than the one before, so the sun is a three-minute
 achievement rather than something you stumble into. Times assume uninterrupted
 flight; they are *frame-rate independent* (see §9).
 
@@ -76,14 +76,14 @@ to the chains.**
 
 | # | Region | Reached | Interval | Light (vs ascent) | Gap | View |
 | --- | --- | --- | --- | --- | --- | --- |
-| 8 | **ΣΕΛΗΝΗ** | 4:02 | +30.0 s | 147 *(was 204)* | 28.3 | 1.99 s |
-| 9 | **ΑΣΤΡΑ** | 4:33 | +30.4 s | 108 *(was 163)* | 26.5 | 1.80 s |
-| 10 | **ΥΔΩΡ** | 4:57 | +24.4 s | 76 *(was 128)* | 24.9 | 1.67 s |
-| 11 | **ΕΙΔΩΛΑ** | 5:16 | +19.5 s | 50 *(was 92)* | 23.5 | 1.57 s |
-| 12 | **ΠΥΡ** | 5:33 | +16.1 s | 29 *(was 61)* | 22.3 | 1.49 s |
-| 13 | **ΣΚΙΑΙ** | 5:46 | +13.2 s | 15 *(was 36)* | 21.2 | 1.43 s |
+| 8 | **ΣΕΛΗΝΗ** | 3:36 | +29.2 s | 147 *(was 204)* | 29.0 | 1.81 s |
+| 9 | **ΑΣΤΡΑ** | 4:05 | +29.1 s | 108 *(was 163)* | 27.0 | 1.70 s |
+| 10 | **ΥΔΩΡ** | 4:29 | +24.0 s | 76 *(was 128)* | 25.0 | 1.60 s |
+| 11 | **ΕΙΔΩΛΑ** | 4:49 | +19.4 s | 50 *(was 92)* | 23.0 | 1.52 s |
+| 12 | **ΠΥΡ** | 5:05 | +16.1 s | 29 *(was 61)* | 21.6 | 1.44 s |
+| 13 | **ΣΚΙΑΙ** | 5:18 | +13.1 s | 15 *(was 36)* | 20.2 | 1.37 s |
 
-**Full run 5:46.** Ascent 3:32, sun 0:30, return 2:14.
+**Full run 5:18.** Ascent 3:07, sun 0:29, return 1:41.
 
 ### Why the return needs its own mechanics
 
@@ -597,9 +597,9 @@ original per-frame guesses and have still never been driven by a human thumb.
    **Do not retune on this data yet.** It predates the drift fix, which took the
    autopilot from 0/5 to 5/5 and may move a human's reach substantially. Gather
    post-fix numbers first. If compression is needed, the growth rate between
-   regions (currently 32–50% per stage) is the dial, not the physics.
+   regions (currently 26–47% per stage) is the dial, not the physics.
 2. **Death behaviour.** Pure restart is the SFCave contract, and it bites harder
-   now there is 5:46 to lose. Checkpointing at the sun would be merciful and
+   now there is 5:18 to lose. Checkpointing at the sun would be merciful and
    would badly undercut the return. *Recommendation: pure restart.*
 2. **Dither at ΗΛΙΟΣ** — see §4.
 3. **`VIEW_CLOSE`** — see §3a. The most likely constant to be wrong.

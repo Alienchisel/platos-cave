@@ -12,8 +12,8 @@ Your progress isn't a number in the corner; it's how much you can see.
 
 And reaching the sun isn't the end. Plato's freed prisoner is obliged to go back
 down, and his eyes no longer work in the dark. **You win by returning to the
-chains** — through the same seven regions, each dimmer than it was on the way up,
-with the view closing in. Roughly 5½ minutes of unbroken flight.
+chains** — back down through six of them, each dimmer than it was on the way up,
+with the view closing in. Roughly 5¼ minutes of unbroken flight.
 
 One more borrowing, from the *Phaedrus* rather than the *Republic*: thrust
 against gravity, with you holding the balance, is already the charioteer and his
@@ -61,19 +61,30 @@ and [the difficulty levers across a full run](docs/images/descent_curves.png).
 `web/index.html` is a self-contained playable build — the same game, running the
 same constants, so tuning done there transfers to the firmware.
 
-It exists for one reason: **the three physics constants and `VIEW_CLOSE` have
-never met a thumb**, and they are the design decisions most likely to be wrong.
-The page shows those four values under the canvas, so "it feels floaty" arrives
-attached to the number that causes it.
+It exists because **the three physics constants had never met a thumb**, and they
+were the design decisions most likely to be wrong. The page shows those four
+values as live sliders under the canvas, so "it feels floaty" arrives attached to
+the number that causes it. The current gravity, thrust and vy-max were all found
+that way, in play, and then baked back into `cave.py`. `VIEW_CLOSE` is still
+untested: it only bites on the return, which is four minutes in.
+
+Two things are drawn in the world rather than on a menu, and both are there to
+make a run legible while you are inside it. **Score markers** are cut into the
+rock at the distance of every score above you — yours in cream and doubled,
+rivals single, with the next one named in the corner. And **the death word lands
+over the frozen frame you died on**, dimmed, with the impact ringed, before the
+stats card follows.
 
 ```bash
 python tools/bake_web.py     # re-export cave.py's constants into the page
 node tools/test_web.js       # check the web build against the Python model
 ```
 
-`test_web.js` runs the game headlessly and compares all thirteen region timings
+`test_web.js` runs the game headlessly and compares all twelve region transitions
 against `cave.py`, at 30 / 50 / 72 / 144 fps. Generated constants keep the
-numbers in step; this checks the behaviour is too.
+numbers in step; this checks the behaviour is too. It also runs the real
+renderer against a stub canvas in every screen state — otherwise the largest
+body of code in the page would never execute under test at all.
 
 **Pin the terrain when comparing tunings.** Append `#seed=42` (or `?seed=42`)
 and every run replays the same cave. Without it, "that felt better" may only
@@ -87,29 +98,38 @@ curve never varies and scores stay comparable. The noise is applied to the
 passage's rate of change rather than its position, damped and clamped, which is
 why it undulates rather than jitters.
 
-It also reports a difficulty reading. A lookahead autopilot — a rough proxy for
-a good human — averages **81% of the distance and completes 0 of 5 runs**, dying
-in the return with the view closing. Read that as a hint that `VIEW_CLOSE` may
-be past fair, not as proof: an autopilot is not a player.
+It also reports a difficulty reading. A lookahead autopilot now **completes 5 of
+5 runs**. It used to complete 0 of 5, and the change was not a difficulty tuning:
+the passage's drift is applied per *column*, so as the scroll accelerated the
+walls came to move vertically faster than the player could ever climb — 280 px/s
+against a ceiling of 135. Late deaths were partly unavoidable, and no amount of
+skill fixed it.
+
+Read 5 of 5 as evidence that the game is *possible*, not that it is easy. The
+autopilot has perfect reaction time and sees the exact bounds; a human playing
+the same build reaches region 4 of 13.
 
 ## Status
 
-**Nothing has been built.** No firmware is written and the hardware has not been
-bought. Everything so far is prototyped in Python at exact panel resolution, so
-the visuals are settled and the feel is entirely unknown.
+**No firmware is written and the hardware has not been bought.** Everything is
+prototyped in Python at exact panel resolution and playable in the browser, so
+the visuals are settled and the feel is tuned — but tuned with a keyboard and a
+mouse, not a thumb on a 48 mm device.
 
 | | |
 | --- | --- |
 | Target | M5Stack **M5StickS3**, 240 × 135 landscape — *not yet purchased* |
 | Visuals | prototyped and rendered at true panel resolution |
-| Ascent and return | modelled end to end, 5 min 46 s |
+| Ascent and return | modelled end to end, 5 min 18 s |
 | Pacing | frame-rate independent, verified 30–144 fps |
 | Assets | baked to C headers, round-trip verified |
-| Physics feel | **never tested** — three constants awaiting a thumb |
+| Physics feel | tuned by playtest in the browser; unverified on hardware |
+| `VIEW_CLOSE` | **never tested** — it only bites four minutes in |
 | Firmware | not started |
 
-Two things gate the firmware and both need the board in hand: **how many
-programmable buttons the StickS3 actually has**, and the three physics constants.
+One thing still gates the firmware and needs the board in hand: **how many
+programmable buttons the StickS3 actually has**, which cascades into the input
+design and the initials-entry screen.
 
 ---
 
@@ -174,8 +194,11 @@ python tools/stage_sheet.py
 Regenerate the committed reference images in `docs/images/`.
 
 Requires `numpy` and `pillow`. The archived point-cloud tools additionally need
-`trimesh`, `scipy` and `networkx`. Rendering `image/plato.png` is not in the
-repository; the baked assets derived from it are.
+`trimesh`, `scipy` and `networkx`.
+
+`bake_assets.py` and `mockups.py` need `image/plato.png`, the source photograph,
+which is **not** in the repository — the assets baked from it are. Those two will
+fail on a fresh clone; everything else runs.
 
 ---
 
