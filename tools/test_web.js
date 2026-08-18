@@ -99,7 +99,7 @@ globalThis.__t = {
   loadMyBest, noteRun, nextAbove, buildTargets,
   REGIONS, WIN_DIST, DESCENT_START, ASCENT_COUNT, PLAYER_X, W, H,
   TABLE_LEN, ALPHABET, LONG_MS, DEATH_HOLD,
-  fitCanvas, setMax, get view() { return view; },
+  fitCanvas, setMax, setRig, get view() { return view; },
   BUST_W, BUST_H, BUST_B64,
 };`, sandbox);
 
@@ -422,11 +422,15 @@ const fitAt = (iw, ih, dpr) => {
 const phone = fitAt(390, 844, 3);
 ok(phone.css >= T.W * 1.4,
    `a portrait phone gets a usable canvas (${phone.css} css px, was ${T.W})`);
+// Rig state changes the vertical budget, so these say which they mean.
+T.setRig(true);
+const deskRig = fitAt(1440, 900, 2);
+ok(deskRig.css === T.W * 4, `desktop with the rig snaps to a whole 4x (${deskRig.css} css px)`);
+ok(deskRig.backing === T.W * 8, `and its backing is exactly 4x at dpr 2 (${deskRig.backing})`);
+T.setRig(false);
 const desk = fitAt(1440, 900, 2);
-ok(desk.css === T.W * 4,
-   `desktop still snaps to a whole 4x (${desk.css} css px)`);
-ok(desk.backing === T.W * 8,
-   `and its backing store is exactly 4x at dpr 2 (${desk.backing})`);
+ok(desk.css === T.W * 5, `without it, the reclaimed space buys a whole 5x (${desk.css} css px)`);
+ok(desk.backing === T.W * 10, `and the backing follows (${desk.backing})`);
 // The dither is an 8x8 pattern; a non-integer backing store would moire it.
 for (const [iw, ih, dpr] of [[390, 844, 3], [844, 390, 3], [320, 568, 2],
                              [768, 1024, 2], [1440, 900, 2], [2560, 1440, 1]]) {
@@ -454,6 +458,14 @@ const landPlay = fitAt(915, 412, 2.625);
 ok(landPlay.css >= landRig.css * 1.3,
    `landscape play mode is the real win (${landRig.css} -> ${landPlay.css} css px)`);
 T.setMax(false);
+
+// The rig is opt-in now, and hiding it hands its vertical space to the canvas.
+T.setRig(true);
+const withRig = fitAt(1200, 800, 2);
+T.setRig(false);
+const noRig = fitAt(1200, 800, 2);
+ok(noRig.css >= withRig.css, `hiding the rig does not shrink the canvas (${withRig.css} -> ${noRig.css})`);
+ok(noRig.backing % T.W === 0, 'and the backing store is still whole');
 
 fitAt(1200, 800, 2);                       // restore the harness default
 

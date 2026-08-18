@@ -1,5 +1,12 @@
 # Hardware Requirements
 
+> **Deferred (2026-08-18).** The browser build turned out to be the whole
+> game, so the handheld port is not the current plan and nothing here is
+> being acted on. Kept because no firmware was ever written to throw away,
+> the reasoning still holds if a board is ever bought, and the asset
+> pipeline it describes is load-bearing for the web build. See the README's
+> Status section.
+
 **Project:** Plato's Cave — a one-button cave-flyer for a pocket ESP32 device.
 **Status:** hardware selected, **not yet purchased**. Nothing has been built on
 real hardware; everything so far is prototyped in Python at panel resolution.

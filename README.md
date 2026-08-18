@@ -1,8 +1,10 @@
 # Plato's Cave
 
-A one-button cave-flyer for a pocket ESP32 handheld. You are a point of light
-ascending out of Plato's cave; gravity pulls you down, the button thrusts you
-up, rock kills you, distance is score.
+### ▶ [Play it](https://alienchisel.github.io/platos-cave/)
+
+A one-button cave-flyer. Space or tap to thrust — hold to climb, release to
+fall, and that is the whole control scheme. You are a point of light ascending
+out of Plato's cave; gravity pulls you down, rock kills you, distance is score.
 
 The allegory isn't decoration. Plato's ascent in *Republic* 514a–517a is an
 ordered sequence of light sources — shadows, fire, carried images, reflections in
@@ -56,23 +58,22 @@ cast, because the cast were never released. They only heard it described.
 See also [the seven ascent regions in detail](docs/images/stages_reference.png)
 and [the difficulty levers across a full run](docs/images/descent_curves.png).
 
-## Play it
+## The build
 
-**▶ [alienchisel.github.io/platos-cave](https://alienchisel.github.io/platos-cave/)**
-— space or tap to thrust. Hold to climb, release to fall; that is the whole
-control scheme.
+`web/index.html` is the game: one self-contained file, no dependencies, no
+network. It is what the link above serves, deployed straight from `web/` rather
+than copied, because a second copy is a second thing to drift.
 
-`web/index.html` is a self-contained playable build — the same game, running the
-same constants, so tuning done there transfers to the firmware. It is what the
-link above serves, deployed straight from `web/` rather than copied, because a
-second copy of the game is a second thing to drift.
+It began as a rig for finding four numbers with a thumb, and the rig is still
+there behind the **tuning** toggle: live sliders for gravity, thrust, vy-max and
+`VIEW_CLOSE`, so "it feels floaty" arrives attached to the number that causes it.
+The first three were found that way, in play, and baked back into `cave.py`.
+`VIEW_CLOSE` is still untested — it only bites on the return, four minutes in.
 
-It exists because **the three physics constants had never met a thumb**, and they
-were the design decisions most likely to be wrong. The page shows those four
-values as live sliders under the canvas, so "it feels floaty" arrives attached to
-the number that causes it. The current gravity, thrust and vy-max were all found
-that way, in play, and then baked back into `cave.py`. `VIEW_CLOSE` is still
-untested: it only bites on the return, which is four minutes in.
+Press **f**, or the button top-right, for play mode: the furniture goes and the
+canvas takes the viewport (and the browser chrome too, where the Fullscreen API
+exists). Turn a phone sideways for it — the game is a landscape shape, so that
+is where it pays.
 
 Two things are drawn in the world rather than on a menu, and both are there to
 make a run legible while you are inside it. **Score markers** are cut into the
@@ -117,25 +118,36 @@ the same build reaches region 4 of 13.
 
 ## Status
 
-**No firmware is written and the hardware has not been bought.** Everything is
-prototyped in Python at exact panel resolution and playable in the browser, so
-the visuals are settled and the feel is tuned — but tuned with a keyboard and a
-mouse, not a thumb on a 48 mm device.
+**The web build is the game.** It is finished and it runs on a phone.
 
 | | |
 | --- | --- |
-| Target | M5Stack **M5StickS3**, 240 × 135 landscape — *not yet purchased* |
-| Visuals | prototyped and rendered at true panel resolution |
-| Ascent and return | modelled end to end, 5 min 18 s |
+| Web build | complete — all thirteen regions, the return, scores, title |
+| Ascent and return | 5 min 18 s end to end |
 | Pacing | frame-rate independent, verified 30–144 fps |
-| Assets | baked to C headers, round-trip verified |
-| Physics feel | tuned by playtest in the browser; unverified on hardware |
+| Physics feel | tuned by playtest |
 | `VIEW_CLOSE` | **never tested** — it only bites four minutes in |
-| Firmware | not started |
+| Audio | not started |
+| Handheld port | **deferred** — see below |
 
-One thing still gates the firmware and needs the board in hand: **how many
-programmable buttons the StickS3 actually has**, which cascades into the input
-design and the initials-entry screen.
+### The handheld, and why it is deferred
+
+This began as firmware for a pocket ESP32, and the design still carries that
+everywhere: 240 × 135, one button, an 8 × 8 ordered dither, three tones per
+region, a 1-bit title bust. Then the browser build — built only to find four
+numbers — turned out to be the whole game, on a device already in your pocket.
+
+Nothing has been abandoned, because the firmware was never begun: there are zero
+lines of game C++. What sits under `firmware/` is the archived point-cloud sketch
+for a board that was rejected. `cave.py` is still the reference implementation,
+`bake_constants.py` still emits `constants.h`, and
+[docs/HARDWARE.md](docs/HARDWARE.md) still records the four devices considered.
+A port stays available; it is simply not the plan.
+
+⚠ **240 × 135 is now a decision, not a constraint.** It was inherited from a
+panel, and with the panel deferred there is nothing to enforce it but intent.
+The resolution, the dither, the three-tone palette and the single button *are*
+the design — see [GAME_DESIGN.md §5](docs/GAME_DESIGN.md).
 
 ---
 
