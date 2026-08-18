@@ -1,5 +1,9 @@
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#07080b">
 <title>Plato's Cave</title>
 <style>
   /* Committed to one visual world: a dithered phosphor display. A light ground
@@ -67,6 +71,21 @@
 
   kbd{background:var(--panel);border:1px solid var(--rule);border-radius:3px;
     padding:1px 6px;color:var(--text);font:inherit;font-size:11px}
+  /* Play mode. The rig -- title, readout, sliders -- is what a desktop needs and
+     a phone does not, and on a phone it is most of the screen. Hiding it is the
+     part that works everywhere; the Fullscreen API below is a bonus where it
+     exists. */
+  #maxbtn{position:fixed;top:calc(env(safe-area-inset-top) + 6px);
+    right:calc(env(safe-area-inset-right) + 6px);z-index:10;
+    width:30px;height:30px;padding:0;line-height:1;
+    font:inherit;font-size:14px;color:var(--dim);
+    background:#0d0f15c0;border:1px solid var(--rule);border-radius:4px;
+    cursor:pointer;opacity:.55}
+  #maxbtn:hover,#maxbtn:focus-visible{opacity:1;color:var(--text)}
+  body.max{gap:0;padding:0;justify-content:center;overflow:hidden}
+  body.max header,body.max #hud,body.max #tune{display:none}
+  body.max canvas{border:none;box-shadow:none}
+
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
   /* Phones. The canvas grows to fill the width here, so the column can exceed
@@ -87,6 +106,7 @@
   <p class=sub>tuning build &middot; 240&times;135 &middot; win at 33000</p>
 </header>
 <canvas id=c></canvas>
+<button id=maxbtn type=button title="play mode (f)" aria-label="toggle play mode">&#9974;</button>
 <div id=hud></div>
 <div id=tune></div>
 <script>
@@ -128,6 +148,7 @@ const DEATH_HOLD = 1.1;         // s the frozen death frame is held; a press ski
 const MARK_SPAN = 6;            // px a marker bites into the rock, each wall
 const GUTTER = 10;              // px of body padding either side, at its floor
 const NARROW = 560;             // px below which this is a phone, not a rig
+const SNAP_KEEP = 0.75;         // keep a whole scale only if it costs < 25% of the fit
 
 // Live-tunable copies of the four constants the hardware cannot yet answer for.
 // Physics reads TUNE, never the baked values, so the sliders below are the real
@@ -147,15 +168,20 @@ function fitCanvas() {
   // Display size is fractional. Integer-only scaling floored to 1x on anything
   // narrower than 480 css px, so a portrait phone was handed the raw 240x135 --
   // a postage stamp -- while four times that fitted down the screen.
-  const availW = innerWidth - 2 * GUTTER;
-  const availH = innerHeight * (innerWidth < NARROW ? 0.46 : 0.74);
+  // Play mode gives the canvas the whole viewport; otherwise it shares with the
+  // rig above and below it.
+  const maxed = document.body.classList.contains('max');
+  const availW = innerWidth - (maxed ? 0 : 2 * GUTTER);
+  const availH = innerHeight * (maxed ? 1 : (innerWidth < NARROW ? 0.46 : 0.74));
   const raw = Math.min(availW / W, availH / H);
-  // Snap to a whole multiple whenever one is worth having. The field is an 8x8
-  // Bayer dither, and fractional scaling moires it -- which would damage the
-  // one thing this build exists to judge. Below 2x there is no integer to snap
-  // to but 1x, and on a phone being visible beats being perfect, so under that
-  // threshold it takes the fractional size and a little unevenness with it.
-  const scale = raw >= 2 ? Math.floor(raw) : Math.max(1, raw);
+  // Snap to a whole multiple when one is worth having. The field is an 8x8 Bayer
+  // dither and fractional scaling moires it, so whole pixels are preferred --
+  // but only up to a point: snapping 2.9 down to 2 discards a third of the
+  // screen, which in landscape on a phone is the difference between a strip and
+  // a game. Take the integer when it keeps most of the available size, and the
+  // fractional size, unevenness included, when it does not.
+  const whole = Math.floor(raw);
+  const scale = whole >= 2 && whole / raw >= SNAP_KEEP ? whole : Math.max(1, raw);
   // The backing store stays an integer multiple, at or above the displayed size
   // in device pixels, so the nearest-neighbour blow-up starts from square
   // pixels and the dither survives it.
@@ -168,6 +194,27 @@ function fitCanvas() {
 }
 addEventListener('resize', fitCanvas);
 addEventListener('orientationchange', fitCanvas);
+
+// Play mode. Two mechanisms, because one of them is not available where it is
+// most wanted: the class hides the rig and works everywhere, and the Fullscreen
+// API additionally drops the browser's own chrome but has never shipped on
+// iPhone Safari. Feature-detected rather than assumed -- if the call is missing
+// or refused, the class alone still does the useful half.
+function setMax(on) {
+  document.body.classList.toggle('max', on);
+  try { localStorage.setItem('pc_max', on ? '1' : ''); } catch (e) { /* private mode */ }
+  const el = document.documentElement;
+  if (on && el.requestFullscreen) el.requestFullscreen().catch(() => {});
+  else if (!on && document.fullscreenElement && document.exitFullscreen)
+    document.exitFullscreen().catch(() => {});
+  fitCanvas();
+}
+// Leaving fullscreen by Esc or a system gesture must not leave the page dressed
+// as though it were still in it.
+addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && document.body.classList.contains('max')
+      && document.fullscreenEnabled) setMax(false);
+});
 
 // --------------------------------------------------------------- game model
 function rng(seed) {                       // mulberry32
@@ -378,8 +425,14 @@ function release() {
 // controls unusable from the keyboard, which is also the accessible path.
 const inControl = e => e.target instanceof Element &&
                        e.target.closest('#tune') !== null;
+document.getElementById('maxbtn').addEventListener('click', e => {
+  setMax(!document.body.classList.contains('max'));
+  e.currentTarget.blur();     // or the next Space press would re-trigger it
+});
 addEventListener('keydown', e => {
   if (inControl(e)) return;
+  if (e.code === 'KeyF') { e.preventDefault(); setMax(!document.body.classList.contains('max')); return; }
+  if (e.code === 'Escape' && document.body.classList.contains('max')) { setMax(false); return; }
   if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); press(); }
 });
 addEventListener('keyup', e => {
@@ -877,5 +930,6 @@ document.getElementById('k_reset').addEventListener('click', () => {
   document.getElementById('k_reset').blur();
 });
 
+if (localStorage.getItem('pc_max')) document.body.classList.add('max');
 fitCanvas(); reset(); fpsT0 = performance.now(); requestAnimationFrame(frame);
 </script>

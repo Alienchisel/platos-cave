@@ -43,12 +43,30 @@ const el = () => ({
   set width(v) { this._w = v; }, get width() { return this._w; },
   set height(v) { this._h = v; }, get height() { return this._h; },
   set innerHTML(v) {}, set textContent(v) {}, set value(v) {}, get value() { return 0; },
-  classList: { toggle: noop, add: noop, remove: noop },
+  // A real classList, not a set of no-ops: play mode is a body class and
+  // fitCanvas reads it back, so a stub that forgets makes the mode untestable.
+  classList: (() => {
+    const set = new Set();
+    return {
+      add: c => set.add(c), remove: c => set.delete(c),
+      contains: c => set.has(c),
+      toggle: (c, on) => (on === undefined ? (set.has(c) ? set.delete(c) : set.add(c))
+                                           : (on ? set.add(c) : set.delete(c)), set.has(c)),
+    };
+  })(),
   closest: () => null, blur: noop, focus: noop,
 });
 const store = {};
+const bodyEl = el(), rootEl = el();
 const sandbox = {
-  document: { getElementById: el, createElement: el },
+  document: {
+    getElementById: el, createElement: el,
+    body: bodyEl, documentElement: rootEl,
+    // No requestFullscreen on rootEl: this stub stands in for the browser that
+    // matters most here, iPhone Safari, which has never shipped the API. The
+    // page must work with the class alone.
+    fullscreenElement: null, fullscreenEnabled: false,
+  },
   localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => store[k] = String(v) },
   // The page reads the hash for a pinned seed and a saved tuning, and writes it
   // back through replaceState. Stub both rather than making the page defend
@@ -80,7 +98,7 @@ globalThis.__t = {
   loadMyBest, noteRun, nextAbove, buildTargets,
   REGIONS, WIN_DIST, DESCENT_START, ASCENT_COUNT, PLAYER_X, W, H,
   TABLE_LEN, ALPHABET, LONG_MS, DEATH_HOLD,
-  fitCanvas, get view() { return view; },
+  fitCanvas, setMax, get view() { return view; },
 };`, sandbox);
 
 const T = sandbox.__t;
@@ -415,6 +433,26 @@ for (const [iw, ih, dpr] of [[390, 844, 3], [844, 390, 3], [320, 568, 2],
      `backing store at ${iw}x${ih}@${dpr}x is a whole multiple and covers the ` +
      `display (${f.backing} for ${f.css} css px)`);
 }
+// Play mode hides the rig, so the canvas gets the whole viewport. This is the
+// half that has to work on iPhone, where the Fullscreen API does not exist --
+// the stub deliberately offers no requestFullscreen.
+const beforeMax = fitAt(390, 844, 3);
+T.setMax(true);
+const afterMax = fitAt(390, 844, 3);
+ok(afterMax.css > beforeMax.css,
+   `play mode grows the canvas (${beforeMax.css} -> ${afterMax.css} css px)`);
+ok(afterMax.backing % T.W === 0, 'and its backing store is still a whole multiple');
+T.setMax(false);
+ok(fitAt(390, 844, 3).css === beforeMax.css, 'leaving play mode restores the fit');
+// Landscape is where it pays: the game is a landscape shape, height is the
+// binding constraint there, and hiding the rig is exactly height.
+const landRig = fitAt(915, 412, 2.625);
+T.setMax(true);
+const landPlay = fitAt(915, 412, 2.625);
+ok(landPlay.css >= landRig.css * 1.3,
+   `landscape play mode is the real win (${landRig.css} -> ${landPlay.css} css px)`);
+T.setMax(false);
+
 fitAt(1200, 800, 2);                       // restore the harness default
 
 // 7. Not a pass/fail -- a difficulty reading. A lookahead controller aiming at
