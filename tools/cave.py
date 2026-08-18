@@ -24,7 +24,35 @@ import sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-FONT = "C:/Windows/Fonts/consola.ttf"
+def _find_font():
+    """The first monospace face we can actually open, and whether it is the one
+    the committed artifacts were rendered with.
+
+    Every tool here hardcoded a Windows path, so on Linux or macOS five of the
+    seven simply raised OSError -- in a public repository anyone else could
+    clone. CI found it the first time it ran.
+
+    Consolas is *canonical*: the committed PNGs and the GIF were rendered with
+    it, and a different face moves pixels. So the fallbacks make the tools run
+    elsewhere, they do not make the output comparable, and regen.py checks
+    CANONICAL_FONT before it treats a pixel difference as staleness.
+    """
+    from pathlib import Path as _P
+    for cand in ("C:/Windows/Fonts/consola.ttf",
+                 "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+                 "/usr/share/fonts/TTF/DejaVuSansMono.ttf",
+                 "/System/Library/Fonts/Menlo.ttc",
+                 "/Library/Fonts/Menlo.ttc"):
+        if _P(cand).exists():
+            return cand
+    raise SystemExit(
+        "no monospace font found. Install DejaVu Sans Mono, or point FONT "
+        "in tools/cave.py at any .ttf. Note that the committed images were "
+        "rendered with Consolas; another face will render them differently.")
+
+
+CANONICAL_FONT = "C:/Windows/Fonts/consola.ttf"
+FONT = _find_font()
 
 # Set by configure(). Kept as module globals so the whole file can be retargeted
 # at a different panel without threading a config object through everything.

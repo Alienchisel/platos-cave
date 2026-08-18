@@ -30,15 +30,27 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 PHOTO = ROOT / "image" / "plato.png"
 
+# The committed PNGs and the GIF were rendered with Consolas. The tools now fall
+# back to another monospace face elsewhere so they *run* on any machine -- but a
+# different face moves pixels, and a pixel difference from the font is not
+# staleness. Where the canonical font is absent, the tools that draw text are
+# skipped rather than diffed.
+sys.path.insert(0, str(ROOT / "tools"))
+import cave                                          # noqa: E402
+CANONICAL_FONT = Path(cave.CANONICAL_FONT).exists()
+
 # Order matters: bake_assets writes bust.h, which bake_web reads.
+FONT_GATE = "the canonical font (Consolas)"
+
+# (tool, what must be present for its output to be comparable)
 TOOLS = [
     ("bake_assets.py", PHOTO),
-    ("bake_constants.py", None),
-    ("bake_web.py", None),
+    ("bake_constants.py", None),          # pure text from cave.py, font-free
+    ("bake_web.py", None),                # ditto, plus base64 out of bust.h
     ("mockups.py", PHOTO),
-    ("stage_sheet.py", None),
-    ("model_descent.py", None),
-    ("readme_gif.py", None),
+    ("stage_sheet.py", FONT_GATE),
+    ("model_descent.py", FONT_GATE),
+    ("readme_gif.py", FONT_GATE),
 ]
 
 # Everything a generator is allowed to write. Anything dirty outside this set is
@@ -79,9 +91,14 @@ def main():
 
     ran, skipped, failed = [], [], []
     for name, needs in TOOLS:
-        if needs is not None and not needs.exists():
-            skipped.append((name, needs.relative_to(ROOT)))
-            print(f"  skip  {name:<20} needs {needs.relative_to(ROOT)}, absent")
+        why = None
+        if needs is FONT_GATE and not CANONICAL_FONT:
+            why = FONT_GATE
+        elif isinstance(needs, Path) and not needs.exists():
+            why = str(needs.relative_to(ROOT))
+        if why:
+            skipped.append((name, why))
+            print(f"  skip  {name:<20} needs {why}, absent")
             continue
         r = subprocess.run([sys.executable, str(ROOT / "tools" / name)],
                            cwd=ROOT / "tools", capture_output=True, text=True,
@@ -99,7 +116,7 @@ def main():
     # re-renders the bust from the photograph to compare, so it is gated on the
     # photograph too -- without that gate it failed the whole run on a clone
     # that simply does not have the file.
-    if PHOTO.exists():
+    if PHOTO.exists() and CANONICAL_FONT:
         r = subprocess.run([sys.executable, str(ROOT / "tools" / "verify_bake.py")],
                            cwd=ROOT / "tools", capture_output=True, text=True,
                            encoding="utf-8", errors="replace")
@@ -108,8 +125,9 @@ def main():
             failed.append("verify_bake.py")
             print("        " + (r.stdout.strip().splitlines() or ["(no output)"])[-1])
     else:
-        skipped.append(("verify_bake.py", PHOTO.relative_to(ROOT)))
-        print(f"  skip  {'verify_bake.py':<20} needs {PHOTO.relative_to(ROOT)}, absent")
+        why = str(PHOTO.relative_to(ROOT)) if not PHOTO.exists() else FONT_GATE
+        skipped.append(("verify_bake.py", why))
+        print(f"  skip  {'verify_bake.py':<20} needs {why}, absent")
 
     stale = sorted(dirty() - before)
     print()

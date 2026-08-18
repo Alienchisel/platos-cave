@@ -34,7 +34,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 import image_treatments
 
-FONT = "C:/Windows/Fonts/consola.ttf"
+import cave                # for the portable font lookup only
+FONT = cave.FONT
 OUT = Path(__file__).parent.parent / "firmware" / "plato" / "assets"
 
 # 8x8 Bayer, matching tools/cave.py.
