@@ -21,6 +21,14 @@ LovyanGFX's drawBitmap() expects.
 import argparse
 from pathlib import Path
 
+import sys
+
+# See the note in cave.py. These two modules are the import roots of every
+# tool here -- cave for the renderers, bake_assets for verify_bake -- so
+# covering both covers all of them.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 

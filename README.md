@@ -155,14 +155,14 @@ the design — see [GAME_DESIGN.md §5](docs/GAME_DESIGN.md).
 
 | Doc | Contents |
 | --- | --- |
-| [docs/HARDWARE.md](docs/HARDWARE.md) | What to buy and why. Confirmed specs, unverified items, and a record of the four devices considered and rejected. |
+| [docs/HARDWARE.md](docs/HARDWARE.md) | *Deferred.* What a handheld port would need, and a record of the four devices considered and rejected. |
 | [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) | Rules, the thirteen regions, the return, palette, pacing curve, open decisions. |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Launcher-plus-modules structure, the input abstraction, build order. |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | *Deferred.* Launcher-plus-modules structure for the firmware, the input abstraction, build order. |
 | [docs/ARCHIVE_POINTCLOUD.md](docs/ARCHIVE_POINTCLOUD.md) | The abandoned first direction, kept for its findings. |
 
-**Read HARDWARE.md first if you're picking this up cold** — one open question
-there (how many programmable buttons the StickS3 actually has) cascades into the
-input design and the high-score entry screen.
+**Play it first if you're picking this up cold**, then read GAME_DESIGN.md — the
+allegory drives the mechanics rather than decorating them, and almost nothing in
+the design makes sense read the other way round.
 
 ---
 
@@ -240,6 +240,18 @@ which point it became winnable.
 
 The target board changed too, once it emerged that the T-QT Pro has no battery
 socket, a case that physically cannot contain a battery, and no speaker.
+
+And then it stopped being firmware. A browser build was made for one narrow
+job — finding three physics constants against a real thumb, because they were
+the decisions most likely to be wrong and the hardware had not been bought. It
+worked; the constants were found. But the build kept acquiring the rest of the
+game, and at some point it *was* the game, running on a phone already in a
+pocket, against firmware that had never had a line written. So the pocket
+handheld became the deferred port and the tuning rig became the product.
+
+Its fingerprints are all over the design, which is the point: 240 × 135, one
+button, an ordered dither and three colours a region are what a 48 mm device
+asked for, and they are why the thing looks like itself.
 
 ---
 

@@ -469,9 +469,14 @@ becomes short-press to cycle, long-press to confirm — workable but worse.
 
 ## 8. Audio
 
-Not yet designed. Constraints from HARDWARE.md: **synthesise, don't sample.**
-8-bit 11 kHz mono runs ~11 KB/second; procedural tones cost ~0 bytes and suit the
-aesthetic. Reserve samples for one or two signature sounds at most.
+Not yet built, and now the largest gap in the game.
+
+**Synthesise, don't sample** — a rule inherited from the handheld, where 8-bit
+11 kHz mono cost ~11 KB/second against a flash budget, and worth keeping in the
+browser for a different reason: samples would have to be embedded as base64 in a
+file that is deliberately one file, and procedural tones cost nothing and sound
+like the dither looks. Web Audio also makes the *Republic* 399a constraint below
+worth honouring properly rather than approximating with square waves.
 
 Obvious candidates: a thrust tone that pitches with velocity, a stage-transition
 chime that shifts with the palette, a death sound, and a title jingle.
@@ -603,15 +608,15 @@ original per-frame guesses and have still never been driven by a human thumb.
 ## 10. Open decisions
 
 1. **⚠ Pacing may be far too long — the open question that matters most.**
-   Real play reaches **region 3 of 13**, about 7% of the run. Everything from
-   ΥΔΩΡ onward — the cyan of leaving the cave, the stars, ΠΕΡΙΑΓΩΓΗ, the entire
-   return, ΤΥΦΛΟΣ, ΚΑΤΕΒΗΝ — has never been seen in ordinary play.
+   Real play reaches **region 4 of 13**, about 15% of the run. Everything from
+   ΑΣΤΡΑ onward — the stars, ΠΕΡΙΑΓΩΓΗ, the entire return, ΤΥΦΛΟΣ, ΚΑΤΕΒΗΝ — has
+   never been seen in ordinary play.
 
    | reach | time | region |
    | --- | --- | --- |
    | 1 000 | 0:17 | ΠΥΡ 2/13 |
-   | **2 422** | **0:41** | **ΕΙΔΩΛΑ 3/13** ← observed |
-   | 5 000 | 1:20 | ΥΔΩΡ 4/13 |
+   | 2 422 | 0:41 | ΕΙΔΩΛΑ 3/13 |
+   | **5 000** | **1:20** | **ΥΔΩΡ 4/13** ← observed |
    | 9 900 | 2:25 | ΣΕΛΗΝΗ 6/13 |
    | 16 000 | 3:32 | ΗΛΙΟΣ 7/13 |
 
@@ -619,16 +624,25 @@ original per-frame guesses and have still never been driven by a human thumb.
    problem — the note at the time read *"may have overshot the other way"* — and
    is now confirmed rather than suspected.
 
-   **Do not retune on this data yet.** It predates the drift fix, which took the
-   autopilot from 0/5 to 5/5 and may move a human's reach substantially. Gather
-   post-fix numbers first. If compression is needed, the growth rate between
+   Post-fix data now exists and moved the reach one region, 3/13 to 4/13 — the
+   drift fix and the per-region steps together, not either alone. That is
+   progress and not a resolution: eleven minutes of designed content still sit
+   past where anyone plays. If compression is wanted, the growth rate between
    regions (currently 26–47% per stage) is the dial, not the physics.
+
+   The counter-argument, which currently holds: the win was specified as being
+   beyond most people's reach, and a game whose late content is rumoured rather
+   than seen is the intended shape rather than a defect.
 2. **Death behaviour.** Pure restart is the SFCave contract, and it bites harder
    now there is 5:18 to lose. Checkpointing at the sun would be merciful and
    would badly undercut the return. *Recommendation: pure restart.*
-2. **Dither at ΗΛΙΟΣ** — see §4.
-3. **`VIEW_CLOSE`** — see §3a. The most likely constant to be wrong.
-4. **Initials entry scheme** — blocked on button count.
+3. **Dither at ΗΛΙΟΣ** — see §4.
+4. **`VIEW_CLOSE`** — see §3a. The most likely constant to be wrong, and now the
+   only one still untested: it is four minutes into a run nobody finishes.
+5. ~~**Initials entry scheme** — blocked on button count.~~ *Resolved.* Built on
+   the one-button scheme anyway — tap steps a letter, hold commits it — and the
+   name persists between runs, so a repeat player confirms with three holds
+   rather than walking the alphabet again.
 
 *Resolved: **stage pacing** — the ascent runs 212.6 s, frame-rate independent
 (§9). **Win condition** — reaching the chains after the return (§3a).
@@ -642,20 +656,25 @@ Republic's first word.*
 
 ## 11. What exists
 
+Everything below is **playable**, in `web/index.html`, unless said otherwise.
+`tools/cave.py` remains the reference implementation the page is checked against.
+
 | | State |
 | --- | --- |
-| Cave generation, scrolling, collision bounds | prototyped, `tools/cave.py` |
-| Seven-stage ascent, progression and palette | prototyped |
-| The return: dazzle, closing view, uncapped levers | modelled, `tools/model_descent.py` |
+| Cave generation, scrolling, collision | played; matches `cave.py` at 30–144 fps |
+| Seven-stage ascent, progression and palette | played |
+| The return: dazzle, closing view, uncapped levers | played; reached only by autopilot |
+| Per-region difficulty steps | played |
+| Dither rendering, three-tone, hard edge | played |
+| Title screen, 1-bit bust from `bust.h` | played |
+| High scores, one-button initials, persistence | played |
+| In-tunnel markers, frozen death frame | played |
+| Play mode and canvas fit | played, phone and desktop |
+| Gravity/thrust feel | **tuned by playtest**, baked back to `cave.py` |
+| `VIEW_CLOSE` | still untested — four minutes into a run nobody finishes |
 | Thirteen regions baked to `constants.h` | done, structurally verified |
-| Dither rendering, three-tone, hard edge | prototyped |
-| Title screen | prototyped, both orientations |
-| High-score table layout | mocked at 240 × 135 |
-| Landscape/portrait comparison | rendered, `preview/orientation.png` |
-| Pacing curve, frame-rate independent | verified across 30–144 fps |
-| **Gravity/thrust feel** | **not prototyped** |
-| Audio | not designed |
-| Firmware | not written |
+| Audio | **designed (§8), not built** — the largest remaining gap |
+| Handheld firmware | deferred; zero lines written |
 
 ### Gotcha worth remembering
 

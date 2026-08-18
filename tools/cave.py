@@ -19,6 +19,8 @@ import math
 import random
 from pathlib import Path
 
+import sys
+
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
@@ -26,6 +28,13 @@ FONT = "C:/Windows/Fonts/consola.ttf"
 
 # Set by configure(). Kept as module globals so the whole file can be retargeted
 # at a different panel without threading a config object through everything.
+# Windows gives a *redirected* stdout the cp1252 codepage, which cannot encode
+# the Greek region names these tools print -- so they ran fine at a console and
+# died the moment output was piped or sent to a file. Every tool here imports
+# cave, so this is the one place that covers all of them.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 W = H = 128
 PLAYER_X = 22
 TILE = None
