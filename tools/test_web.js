@@ -99,7 +99,7 @@ globalThis.__t = {
   loadMyBest, noteRun, nextAbove, buildTargets,
   REGIONS, WIN_DIST, DESCENT_START, ASCENT_COUNT, PLAYER_X, W, H,
   TABLE_LEN, ALPHABET, LONG_MS, DEATH_HOLD,
-  fitCanvas, setMax, setRig, get view() { return view; },
+  fitCanvas, setMax, setRig, SND, get view() { return view; },
   BUST_W, BUST_H, BUST_B64,
 };`, sandbox);
 
@@ -492,6 +492,64 @@ T.S.state = 'title';
 clock += 10; T.press();
 ok(T.S.state === 'ready', `a press leaves the title (${T.S.state})`);
 smoke("draw() in 'title'", S => S.state = 'title');
+
+// 13. Audio cues. There is no AudioContext here, so the synthesis cannot be
+//     tested -- but which cue fires when is game logic, and that can be. SND
+//     records every cue whether or not it can play one.
+console.log('\naudio cues:');
+ok(!T.SND.available(), 'no AudioContext in the harness, as expected');
+const fired = () => T.SND.recent.slice();
+const clearCues = () => { T.SND.recent.length = 0; };
+
+clearCues();
+T.reset(3); T.setLast(0); T.press();
+T.setHeld(true); T.frame(20);
+ok(fired().includes('thrust+'), `holding starts the drone (${fired()})`);
+T.setHeld(false); T.frame(40);
+ok(fired().includes('thrust-'), 'releasing stops it');
+
+// A region boundary and the turn each get their own cue.
+// Two frames only advance ~4 units at 55 col/s, so this needs a run at it
+// rather than a nudge.
+const runAcross = (target) => {
+  T.reset(3); T.setLast(0); T.press();
+  // Start well back: the first frame is spent arming the target flags, and
+  // starting two units short meant that frame crossed the boundary and the cue
+  // was wiped by the clear that followed it.
+  T.S.dist = target - 60;
+  T.setHeld(true);
+  T.frame(20);
+  clearCues();
+  for (let i = 2; i <= 120 && T.S.dist < target + 10; i++) {
+    T.frame(i * 20);
+    if (T.S.state === 'dead') {          // forgiven, as elsewhere: pacing is the subject
+      const [a, b] = T.S.cave.bounds(T.PLAYER_X);
+      T.S.py = (a + b) / 2; T.S.vy = 0; T.S.state = 'play';
+    }
+  }
+  return fired();
+};
+ok(runAcross(T.REGIONS[1].from).includes('region'),
+   `crossing into a region chimes (${runAcross(T.REGIONS[1].from)})`);
+
+const atTurn = runAcross(T.DESCENT_START);
+ok(atTurn.includes('turn'), `the turn gets its own cue (${atTurn})`);
+ok(!atTurn.includes('region'), 'and not also a region chime -- the branch is exclusive');
+ok(!atTurn.includes('pass'), 'and no phantom overtakes from targets already behind');
+
+// Death must silence the drone, or it runs on under the death screen forever.
+clearCues();
+T.reset(11); T.setLast(0); T.press();
+T.setHeld(true); T.frame(20); T.setHeld(false);
+for (let i = 2; i <= 900 && T.S.state !== 'dead'; i++) T.frame(i * 1000 / 60);
+ok(T.S.state === 'dead' && fired().includes('death'), 'dying fires the death cue');
+ok(fired().lastIndexOf('thrust-') > fired().lastIndexOf('thrust+'),
+   'and the thrust drone is stopped, not left running');
+
+// Muting must not merely turn the volume down on a running drone.
+T.SND.setMuted(true);
+ok(T.SND.isMuted(), 'mute persists through the accessor');
+T.SND.setMuted(false);
 
 // 7. Not a pass/fail -- a difficulty reading. A lookahead controller aiming at
 //    the tightest point in the window ahead is a decent proxy for a good human.
