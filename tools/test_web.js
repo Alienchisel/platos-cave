@@ -35,8 +35,13 @@ const ctx2d = new Proxy({}, {
 });
 const el = () => ({
   getContext: () => ctx2d, addEventListener: noop,
-  set width(v) {}, get width() { return 240; },
-  set height(v) {}, get height() { return 135; },
+  // fitCanvas sets an explicit display size, so the stub needs a style object.
+  style: {},
+  // Real storage rather than a fixed 240x135: fitCanvas sizes the backing store
+  // deliberately, and draw() reads it back to scale into.
+  _w: 240, _h: 135,
+  set width(v) { this._w = v; }, get width() { return this._w; },
+  set height(v) { this._h = v; }, get height() { return this._h; },
   set innerHTML(v) {}, set textContent(v) {}, set value(v) {}, get value() { return 0; },
   classList: { toggle: noop, add: noop, remove: noop },
   closest: () => null, blur: noop, focus: noop,
@@ -55,6 +60,7 @@ const sandbox = {
   // Controllable clock: the one-button initials scheme distinguishes a tap from
   // a hold by duration, so the harness has to be able to move time.
   performance: { now: () => clock }, innerWidth: 1200, innerHeight: 800,
+  devicePixelRatio: 2,
   Math, console,
 };
 let clock = 0;
@@ -74,6 +80,7 @@ globalThis.__t = {
   loadMyBest, noteRun, nextAbove, buildTargets,
   REGIONS, WIN_DIST, DESCENT_START, ASCENT_COUNT, PLAYER_X, W, H,
   TABLE_LEN, ALPHABET, LONG_MS, DEATH_HOLD,
+  fitCanvas, get view() { return view; },
 };`, sandbox);
 
 const T = sandbox.__t;
@@ -383,6 +390,32 @@ smoke('markers under the closing view', S => {
   S.state = 'play'; S.dist = 26000;
   S.targets = [{ at: 26060, ini: 'ΔΑΜ', mine: false, done: false }];
 });
+
+// 11. Canvas fit. Integer-only scaling floored to 1x below 480 css px, so a
+//     portrait phone got the raw 240x135 while four times that fitted.
+console.log('\ncanvas fit:');
+const fitAt = (iw, ih, dpr) => {
+  sandbox.innerWidth = iw; sandbox.innerHeight = ih; sandbox.devicePixelRatio = dpr;
+  T.fitCanvas();
+  return { css: parseInt(T.view.style.width, 10), backing: T.view.width };
+};
+const phone = fitAt(390, 844, 3);
+ok(phone.css >= T.W * 1.4,
+   `a portrait phone gets a usable canvas (${phone.css} css px, was ${T.W})`);
+const desk = fitAt(1440, 900, 2);
+ok(desk.css === T.W * 4,
+   `desktop still snaps to a whole 4x (${desk.css} css px)`);
+ok(desk.backing === T.W * 8,
+   `and its backing store is exactly 4x at dpr 2 (${desk.backing})`);
+// The dither is an 8x8 pattern; a non-integer backing store would moire it.
+for (const [iw, ih, dpr] of [[390, 844, 3], [844, 390, 3], [320, 568, 2],
+                             [768, 1024, 2], [1440, 900, 2], [2560, 1440, 1]]) {
+  const f = fitAt(iw, ih, dpr);
+  ok(f.backing % T.W === 0 && f.backing >= f.css * dpr,
+     `backing store at ${iw}x${ih}@${dpr}x is a whole multiple and covers the ` +
+     `display (${f.backing} for ${f.css} css px)`);
+}
+fitAt(1200, 800, 2);                       // restore the harness default
 
 // 7. Not a pass/fail -- a difficulty reading. A lookahead controller aiming at
 //    the tightest point in the window ahead is a decent proxy for a good human.
