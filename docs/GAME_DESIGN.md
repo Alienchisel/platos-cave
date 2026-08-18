@@ -1,10 +1,12 @@
 # Plato's Cave — Game Design
 
-**Status:** visuals prototyped at panel resolution in `tools/cave.py`. **Feel is
-entirely unprototyped** — an autopilot flies the demo, so every constant below
-governing gravity, thrust and pacing is a guess awaiting a thumb.
+**Status:** built and playable — [alienchisel.github.io/platos-cave](https://alienchisel.github.io/platos-cave/).
+Gravity, thrust and vy-max were found by playtest and baked back into
+`tools/cave.py`, which remains the reference implementation. `VIEW_CLOSE` is the
+one constant still untested, because it only bites on the return.
 
-**Target:** M5StickS3, 240 × 135 landscape. See [HARDWARE.md](HARDWARE.md).
+**Target:** the browser, at 240 × 135 — see §5 for why that number stays. The
+handheld port is deferred; [HARDWARE.md](HARDWARE.md) keeps its reasoning.
 
 ---
 
@@ -349,6 +351,29 @@ trace. **Undecided.**
 ---
 
 ## 5. Orientation and layout
+
+### ⚠ 240 × 135 is a decision, not a constraint
+
+It began as the M5StickS3's panel. With the handheld port deferred, no hardware
+enforces it any longer — and an inherited fact with nothing left to inherit from
+erodes in about three sessions. So it is restated here as a choice:
+
+**The resolution, the 8 × 8 ordered dither, the three tones per region and the
+single button are the design.** Not a limitation the game is working around —
+the reason it looks like anything at all. The brightening screen only reads as
+progress because there is so little of it; the dither only reads as deliberate
+because the palette is three colours deep; the charioteer only works because
+there is exactly one input to hold or release.
+
+A higher resolution would not be a better version of this game. It would be a
+different, worse one, because every one of those decisions would have to be
+remade with nothing forcing them to be good.
+
+The canvas may be *scaled* to any size — see the fit rules in `web/index.html`,
+which snap to whole multiples precisely to protect the dither. What must not
+change is the 240 × 135 the game is drawn at.
+
+
 
 Everything in the game flow is **landscape 240 × 135**, by software rotation of
 the native portrait panel. Rotating the device between title and gameplay would

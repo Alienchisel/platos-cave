@@ -1,5 +1,12 @@
 # Software Architecture
 
+> **Deferred (2026-08-18).** The browser build turned out to be the whole
+> game, so the handheld port is not the current plan and nothing here is
+> being acted on. Kept because no firmware was ever written to throw away,
+> the reasoning still holds if a board is ever bought, and the asset
+> pipeline it describes is load-bearing for the web build. See the README's
+> Status section.
+
 **Status:** design only. No firmware written. Targets M5StickS3 — see
 [HARDWARE.md](HARDWARE.md); game rules in [GAME_DESIGN.md](GAME_DESIGN.md).
 
