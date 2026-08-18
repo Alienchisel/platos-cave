@@ -14,6 +14,7 @@ the hand-written game code alone.
 """
 
 import argparse
+import base64
 import re
 from pathlib import Path
 
@@ -36,8 +37,42 @@ def js_regions():
     return "const REGIONS=[\n" + "\n".join(rows) + "\n];"
 
 
+def bust():
+    """The title bust, out of the committed header rather than the photograph.
+
+    bake_assets.py makes bust.h from image/plato.png, which is *not* in the
+    repository -- so reading the photo here would make this script unrunnable on
+    a fresh clone, and it is the one baker CI depends on. The header is the
+    committed artifact, so it is the honest source for a second consumer.
+
+    Parsed without a regex: the file is machine-written and the shape is fixed.
+    """
+    h = Path(__file__).parent.parent / "firmware" / "plato" / "assets" / "bust.h"
+    if not h.exists():
+        print(f"  !! {h.name} missing -- title screen will have no bust")
+        return 0, 0, ""
+    text = h.read_text()
+    dims = {}
+    for key in ("BUST_W", "BUST_H"):
+        line = next(l for l in text.splitlines() if l.startswith(f"#define {key}"))
+        dims[key] = int(line.split()[2])
+    body = text[text.index("BUST_BITS"):]
+    body = body[body.index("{") + 1:body.index("}")]
+    data = bytes(int(t, 16) for t in
+                 (t.strip() for t in body.split(",")) if t.startswith("0x"))
+    stride = (dims["BUST_W"] + 7) // 8
+    want = stride * dims["BUST_H"]
+    if len(data) != want:
+        raise SystemExit(f"bust.h: {len(data)} bytes, expected {want} "
+                         f"({stride}/row x {dims['BUST_H']} rows)")
+    print(f"  bust {dims['BUST_W']}x{dims['BUST_H']}, {len(data)} bytes "
+          f"-> {len(base64.b64encode(data))} b64 chars")
+    return dims["BUST_W"], dims["BUST_H"], base64.b64encode(data).decode()
+
+
 def emit():
     b = (cave.BAYER * 255).round().astype(int).flatten()
+    bw, bh, b64 = bust()
     return "\n".join([
         BEGIN,
         f"const W={cave.W},H={cave.H};",
@@ -58,6 +93,8 @@ def emit():
         f'STARS_LABEL="{cave.STARS_REGION}",STAR_RARITY={cave.STAR_RARITY};',
         f"const ASCENT_COUNT={len(cave.STAGES)};",
         "const BAYER=[" + ",".join(str(v) for v in b) + "];",
+        f"const BUST_W={bw},BUST_H={bh};",
+        f'const BUST_B64="{b64}";',
         END,
     ])
 

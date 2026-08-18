@@ -77,6 +77,7 @@ const sandbox = {
   addEventListener: noop, requestAnimationFrame: noop,
   // Controllable clock: the one-button initials scheme distinguishes a tap from
   // a hold by duration, so the harness has to be able to move time.
+  atob: b64 => Buffer.from(b64, 'base64').toString('binary'),
   performance: { now: () => clock }, innerWidth: 1200, innerHeight: 800,
   devicePixelRatio: 2,
   Math, console,
@@ -99,6 +100,7 @@ globalThis.__t = {
   REGIONS, WIN_DIST, DESCENT_START, ASCENT_COUNT, PLAYER_X, W, H,
   TABLE_LEN, ALPHABET, LONG_MS, DEATH_HOLD,
   fitCanvas, setMax, get view() { return view; },
+  BUST_W, BUST_H, BUST_B64,
 };`, sandbox);
 
 const T = sandbox.__t;
@@ -454,6 +456,30 @@ ok(landPlay.css >= landRig.css * 1.3,
 T.setMax(false);
 
 fitAt(1200, 800, 2);                       // restore the harness default
+
+// 12. The title screen. The bust travels as base64 in the generated block, so
+//     the thing to check is that it survives the trip at the right size.
+console.log('\ntitle screen:');
+ok(T.BUST_B64.length > 0, 'the bust reached the page');
+const bustBytes = Buffer.from(T.BUST_B64, 'base64').length;
+const wantBytes = ((T.BUST_W + 7) >> 3) * T.BUST_H;
+ok(bustBytes === wantBytes,
+   `${T.BUST_W}x${T.BUST_H} unpacks to the right length ` +
+   `(${bustBytes} bytes, want ${wantBytes})`);
+// A blank or fully-lit bust would still be the right length, so check it is a
+// picture: a dithered face lands nowhere near either extreme.
+const lit = Buffer.from(T.BUST_B64, 'base64')
+  .reduce((n, b) => n + ((b * 0x08040201 >> 3) & 0x11111111).toString(2)
+    .replace(/0/g, '').length, 0);
+const litPct = lit / (T.BUST_W * T.BUST_H) * 100;
+ok(litPct > 5 && litPct < 60, `and is a picture, not a blank (${litPct.toFixed(0)}% lit)`);
+
+T.reset(3);
+ok(T.S.state === 'ready', 'a reset run opens at the standing start, not the title');
+T.S.state = 'title';
+clock += 10; T.press();
+ok(T.S.state === 'ready', `a press leaves the title (${T.S.state})`);
+smoke("draw() in 'title'", S => S.state = 'title');
 
 // 7. Not a pass/fail -- a difficulty reading. A lookahead controller aiming at
 //    the tightest point in the window ahead is a decent proxy for a good human.
