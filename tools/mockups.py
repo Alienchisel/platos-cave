@@ -18,7 +18,7 @@ from PIL import Image, ImageDraw, ImageFont
 import cave
 import imgutil
 
-FONT = "C:/Windows/Fonts/consola.ttf"
+FONT = cave.FONT          # resolved once, portably -- see cave._find_font
 
 # Default table. The header reads ΟΙ ΛΥΘΕΝΤΕΣ -- "those who were released" -- so
 # the ordering carries the joke: the Neoplatonists at the top because they

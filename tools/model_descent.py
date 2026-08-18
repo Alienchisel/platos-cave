@@ -26,7 +26,7 @@ from PIL import Image, ImageDraw, ImageFont
 import cave
 import imgutil
 
-FONT = "C:/Windows/Fonts/consola.ttf"
+FONT = cave.FONT          # resolved once, portably -- see cave._find_font
 
 
 def timings(seed, fps, seconds):

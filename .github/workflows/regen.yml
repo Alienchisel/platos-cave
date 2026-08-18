@@ -23,8 +23,16 @@ jobs:
           python-version: '3.12'
       - run: pip install --quiet numpy pillow
 
-      # image/plato.png is not in the repository, so bake_assets, mockups and
-      # verify_bake skip here. regen.py names them in its summary rather than
-      # reporting a clean run that silently covered five of eight tools.
+      # Two things are absent on a runner and both are gates. image/plato.png,
+      # the source photograph, is not in the repository. And Consolas is not on
+      # Linux -- the committed PNGs and the GIF were rendered with it, so a
+      # different face moves pixels and a pixel difference from the font is not
+      # staleness.
+      #
+      # So CI checks the two font-free generators, which are the
+      # correctness-critical ones: constants.h and the page's generated block
+      # must match cave.py. The image tools are named in regen.py's summary as
+      # NOT CHECKED. The full check runs on the machine the artifacts are
+      # actually generated on.
       - name: Regenerate and diff
         run: python tools/regen.py --check
