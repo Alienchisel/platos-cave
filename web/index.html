@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>Plato's Cave</title>
 <style>
@@ -67,6 +68,18 @@
   kbd{background:var(--panel);border:1px solid var(--rule);border-radius:3px;
     padding:1px 6px;color:var(--text);font:inherit;font-size:11px}
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  /* Phones. The canvas grows to fill the width here, so the column can exceed
+     the viewport -- and body is overflow:hidden with justify-content:center,
+     which would silently clip the top and bottom rather than letting you reach
+     them. Anchor to the top and allow the scroll. */
+  @media (max-width:560px){
+    html,body{height:auto;min-height:100%}
+    body{justify-content:flex-start;overflow-y:auto}
+    #tune{max-width:100%}
+    #tune input[type=range]{width:120px}
+    #jumprow .pip{width:15px;height:15px}
+  }
 </style>
 
 <header>
@@ -113,6 +126,8 @@ const DT_CLAMP = 0.05;          // one slow frame must not teleport the player
 // Presentation, not physics, so these stay out of cave.py and the bake.
 const DEATH_HOLD = 1.1;         // s the frozen death frame is held; a press skips it
 const MARK_SPAN = 6;            // px a marker bites into the rock, each wall
+const GUTTER = 10;              // px of body padding either side, at its floor
+const NARROW = 560;             // px below which this is a phone, not a rig
 
 // Live-tunable copies of the four constants the hardware cannot yet answer for.
 // Physics reads TUNE, never the baked values, so the sliders below are the real
@@ -129,12 +144,30 @@ const g = buf.getContext('2d');
 const img = g.createImageData(W, H);
 
 function fitCanvas() {
-  const z = Math.max(1, Math.min(Math.floor(innerWidth * 0.96 / W),
-                                 Math.floor(innerHeight * 0.74 / H)));
+  // Display size is fractional. Integer-only scaling floored to 1x on anything
+  // narrower than 480 css px, so a portrait phone was handed the raw 240x135 --
+  // a postage stamp -- while four times that fitted down the screen.
+  const availW = innerWidth - 2 * GUTTER;
+  const availH = innerHeight * (innerWidth < NARROW ? 0.46 : 0.74);
+  const raw = Math.min(availW / W, availH / H);
+  // Snap to a whole multiple whenever one is worth having. The field is an 8x8
+  // Bayer dither, and fractional scaling moires it -- which would damage the
+  // one thing this build exists to judge. Below 2x there is no integer to snap
+  // to but 1x, and on a phone being visible beats being perfect, so under that
+  // threshold it takes the fractional size and a little unevenness with it.
+  const scale = raw >= 2 ? Math.floor(raw) : Math.max(1, raw);
+  // The backing store stays an integer multiple, at or above the displayed size
+  // in device pixels, so the nearest-neighbour blow-up starts from square
+  // pixels and the dither survives it.
+  const z = Math.max(1, Math.ceil(scale * (devicePixelRatio || 1)));
   view.width = W * z; view.height = H * z;
+  view.style.width = Math.round(W * scale) + 'px';
+  view.style.height = Math.round(H * scale) + 'px';
+  // Setting .width resets the whole 2D context, this flag included.
   vx.imageSmoothingEnabled = false;
 }
 addEventListener('resize', fitCanvas);
+addEventListener('orientationchange', fitCanvas);
 
 // --------------------------------------------------------------- game model
 function rng(seed) {                       // mulberry32
