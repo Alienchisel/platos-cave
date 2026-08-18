@@ -819,8 +819,13 @@ function endCard(reg) {
       : rgb([r.glow[0] * .16, r.glow[1] * .16, r.glow[2] * .16]);
     g.fillRect(x, 62, pip, pip); x += pip + gap;
   });
-  g.fillStyle = '#fff6d6';
-  g.fillRect(W / 2 - width / 2 + ASCENT_COUNT * (pip + gap) + turn / 2 - 1, 60, 1, 11);
+  // Neutral, and taller than the pips. It used to be drawn in the sun's own
+  // cream, immediately beside the cream ΗΛΙΟΣ pip -- so the brightest square and
+  // the mark beside it read as one thing, and the row looked like it had simply
+  // lost a pip on the right. It is a boundary, not a place: it should not wear a
+  // region's colour.
+  g.fillStyle = '#9aa0ae';
+  g.fillRect(W / 2 - width / 2 + ASCENT_COUNT * (pip + gap) + turn / 2 - 1, 58, 1, 15);
 
   g.font = '10px ui-monospace,Consolas,monospace';
   g.fillStyle = '#e2e2e2';

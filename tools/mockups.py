@@ -92,8 +92,13 @@ def progress_pips(d, cx, y, reached, pip=7, gap=3, turn_gap=7):
         x += pip + gap
     # Mark the turn with a divider standing in the gap. A tick underneath was
     # two pixels and simply did not register at this size.
+    #
+    # Neutral rather than the sun's cream: drawn in cream it sat immediately
+    # beside the cream ΗΛΙΟΣ pip, the two read as one mark, and the row looked
+    # as though it were missing a pip on the right. It is a boundary, not a
+    # place, so it does not wear a region's colour.
     turn_x = x0 + n_asc * (pip + gap) + turn_gap / 2 - 1
-    d.line([turn_x, y - 2, turn_x, y + pip + 1], fill=(255, 246, 214))
+    d.line([turn_x, y - 4, turn_x, y + pip + 3], fill=(154, 160, 174))
 
 
 def region_line(dist):

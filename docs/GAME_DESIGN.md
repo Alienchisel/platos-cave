@@ -140,6 +140,22 @@ Dying on the way up and dying on the way back are not the same event.
 freed you are not a prisoner any more, so the word changes, and so does the
 colour. *This resolves the death-screen question that stood in §10.*
 
+### The progress row, and why it is lopsided
+
+Under the death word sits one pip per region, in that region's own light,
+filled up to where the run ended, with a divider standing in a wider gap.
+
+**Seven pips left of the divider and six right, which is correct.** The ascent
+is seven regions; the return retraces six. You climb *to* the sun and turn
+there — ΗΛΙΟΣ is the hinge, not a step taken twice. 7 + 6 = 13, which is the
+`n/13` printed beneath.
+
+⚠ **The divider must not wear a region's colour.** It was originally drawn in
+the sun's cream, immediately beside the cream ΗΛΙΟΣ pip — so on any run that
+reached the sun the brightest square and the mark next to it read as a single
+object, and the row looked as though it had simply lost a pip on the right. It
+is a boundary, not a place. Neutral grey, and taller than the pips.
+
 ### Where the death word lands
 
 The word is held for `DEATH_HOLD` (1.1 s) **over the frozen frame you died on**,
