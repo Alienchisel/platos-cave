@@ -139,6 +139,8 @@ const VIEW_CLOSE=0.55,VIEW_DEPTH=0.92;
 const FLICKER_LABEL="ΠΥΡ",FLICKER_DEPTH=0.16,STARS_LABEL="ΑΣΤΡΑ",STAR_RARITY=1400;
 const ASCENT_COUNT=7;
 const BAYER=[0,128,32,159,8,135,40,167,191,64,223,96,199,72,231,104,48,175,16,143,56,183,24,151,239,112,207,80,247,120,215,88,12,139,44,171,4,131,36,163,203,76,235,108,195,68,227,100,60,187,28,155,52,179,20,147,251,124,219,92,243,116,211,84];
+const BUST_W=118,BUST_H=118;
+const BUST_B64="AAAAAAAAAKigAAAAAAAAAAAAAAAAQFBAAAAAAAAAAAAAAAACqqqqAAAAAAAAAAAAAAABFQEQAAAAAAAAAAAAAAAq/qqqqAAAAAAAAAAAAABFVVVVVAAAAAAAAAAAAAKqu6uuqoAAAAAAAAAAAABVVVVXUQAAAAAAAAAAAAr6/v7r/qgAAAAAAAAAAFVVXdXVVVAAAAAAAAAAAKu7u677uroAAAAAAAAAAVUVVVVVVVQAAAAAAAAAAq6+7+7ur+qAAAAAAAAABB1dVV1dVVVAAAAAAAAAAr6+vuv/7rugAAAAAAAABVVVVVVXVVVQAAAAAAAAqv7/7u/+7/qoAAAAAAAABVX11V1dXdVAAAAAAAAAKv/7vr/r+7qoAAAAAAAAEVV1dXVXVXdQAAAAAAAA7u6rquu/v/+oAAAAAAAAVVVX1V1VfV1UAAAAAAAAq6P/////+66qAAAAAAAAVRdXd3d3fdVUAAAAAAAA6v///////v/6AAAAAAAB0V3f///9313UAAAAAAAC+////////76qAAAAAAAAcVV3dXfV9dVVAAAAAAAO6r////////+ugAAAAAAFfX3f///d39VVAAAAAAAKu////////++rgAAAAAABAXdXd3/XVRUFAAAAAAAK7v////////+ugAAAAAABXf3V3f//3VRUQAAAAAAL7///////+6KigAAAAAAFUXVXdXV3VVVFAAAAAAAO6///////7/yugAAAAAAEVV1dVV1VVVVdAAAAAAAOu7/7r64iO6uqgAAAAAAAFVUQBQABBVUVAAAAAAAKqrqAiui67++qgAAAAAAFRUVABUH8VVxQQAAAAAACqqr6D+ODqvqoIAAAAAABFRFAB0RQRVVRAAAAAAAC7quAr7j+a7qvgAAAAAABVQAVX9/VEFVfwAAAAAADqoK7r77/v7r6gAAAAAABVdFXV1UQf1VQAAAAAAAAv/767/+r/+r4gAAAAAAAFd8F3V////XBAAAAAAACu//v/7////ungAAAAAAAEXX/V1X39XVFQAAAAAACj///7////+qOgAAAAAABFd/d393//UVFAAAAAAACu///v/v//6uugAAAAAABFXV3F1V/dQFVAAAAAAAArv/+/////+v+gAAAAAAAVV3939X/31VVAAAAAAAAqr///+///qv6AAAAAAAAVVf1VUd/dVUUAAAAAAAA7u/+jur//u++AAAAAAAAVVXcBQBf1VVcAAAAAAAAKqv+AAD/+674AAAAAAAAEVVVAAFXVVVQAAAAAAAAu+/+qL//7/v4AAAAAAAAHdXfBFX11VVQAAAAAAAAK/u/ov//+/+gAAAAAAAABVVVRdVVVVVAAAAAAAAAK//uqor/7//gAAAAAAAABd1UAABVVd1QAAAAAAAAL7+6Cvo/v+6wAAAAAAAAFVUUF1YVVVUQAAAAAAAAqv/qf/ov/v6gAAAAAAAAFFVVAAVV1VRAAAAAAAAAKvu7oCu7//rgAAAAAAAAFVdVV3VTV1VAAAAAAAAADv+r//+/v6qgAAAAAAAAB1VdXf3VVVVAAAAAAAAAC7++//+776uAAAAAAAAAAVVVVXeVd1EAAAAAAAAACr+////P7/qAAAAAAAAAAR0f1d3FVfRAAAAAAAAAAjq7///+766AAAAAAAAAABVVVXf11UEAAAAAAAAAAgrr////r+uAAAAAAAAAAAVFXVVVXVUAAAAAAAAAACqvu/v/qqoAAAAAAAAAAAFFVVVTVEUAAAAAAAAAAK7/7v7/+qqAAAAAAAAAAARVVV3VVEQAAAAAAAAAACq/6v//+qIAAAAAAAAAABEVFXV1URAAAAAAAAAAAK//vv+++qoAAAAAAAAAAAVV1FHFVVAAAAAAAAAAACO/77ujqqgAAAAAAAAAAAHVd1VRVVAAAAAAAAAAACvK//qvvugAAAAAAAAAAAHF3dVVVNAAAAAAAAAAACLq++K6/qgAAAAAAAAAAABFVQVVZXAAAAAAAAAAAArv+47qz6AAAAAAAAAAAAFVVRXVnAAAAAAAAAAAAAquq7u7ugAAAAAAAAAAAAEFAVlxEAAAAAAAAAAAAAKKq/7qqoAAAAAAAAAAAAAEUVRVVAAAAAAAAAAAAAKruLqqqAAAAAAAAAAAAABBVRVRAAAAAAAAAAAAAADq7q6qiAAAAAAAAAAAAAAAXBRUAAAAAAAAAAAAAAACrqquAAAAAAAAAAAAAAAAFlBUAAAAAAAAAAAAAAAAqqqoAAAAAAAAAAAAAAAAQQAAAAAAAAAAAAAAAAAAIqIgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACiiAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 // ---- END GENERATED ----
 
 const PLAYER_X = Math.max(8, Math.round(W * PLAYER_X_FRAC));
@@ -163,6 +165,30 @@ const vx = view.getContext('2d');
 const buf = document.createElement('canvas'); buf.width = W; buf.height = H;
 const g = buf.getContext('2d');
 const img = g.createImageData(W, H);
+
+// The title bust, unpacked from the same 1-bit rows the firmware ships: MSB
+// first, each row padded to a byte boundary. Built once into its own canvas --
+// 118x118 is ~14k pixels and the screen never changes, so painting it per frame
+// would be absurd.
+const bustCanvas = (() => {
+  if (!BUST_B64 || typeof atob !== 'function') return null;
+  const raw = atob(BUST_B64);
+  const c = document.createElement('canvas');
+  c.width = BUST_W; c.height = BUST_H;
+  const cx = c.getContext('2d');
+  const im = cx.createImageData(BUST_W, BUST_H);
+  const stride = (BUST_W + 7) >> 3;
+  for (let y = 0; y < BUST_H; y++) {
+    for (let x = 0; x < BUST_W; x++) {
+      const on = raw.charCodeAt(y * stride + (x >> 3)) & (0x80 >> (x & 7));
+      const i = (y * BUST_W + x) * 4;
+      im.data[i] = im.data[i + 1] = im.data[i + 2] = on ? 255 : 0;
+      im.data[i + 3] = 255;
+    }
+  }
+  cx.putImageData(im, 0, 0);
+  return c;
+})();
 
 function fitCanvas() {
   // Display size is fractional. Integer-only scaling floored to 1x on anything
@@ -390,6 +416,7 @@ let held = false, pressAt = 0;
 function press() {
   if (!S) { reset(); return; }
   pressAt = performance.now();
+  if (S.state === 'title') { S.state = 'ready'; return; }
   if (S.state === 'ready') { S.state = 'play'; held = true; return; }
   if (S.state === 'play') { held = true; return; }
   // 'initials' resolves on release, since it needs the press duration.
@@ -599,7 +626,8 @@ function draw() {
   }
   if (S.state === 'play' || S.state === 'ready') drawChase();
 
-  if (S.state === 'ready') readyCard();
+  if (S.state === 'title') titleCard();
+  else if (S.state === 'ready') readyCard();
   else if (S.state === 'initials') initialsCard();
   else if (S.state === 'scores') scoresCard();
   else if (S.state !== 'play') { if (S.deadT < DEATH_HOLD) impactCard(); else endCard(reg); }
@@ -660,6 +688,28 @@ function scoresCard() {
   g.textAlign = 'center';
   g.font = '9px ui-monospace,Consolas,monospace';
   g.fillStyle = '#6a6a76'; g.fillText('PRESS TO PLAY AGAIN', W / 2, H - 11);
+}
+
+function titleCard() {
+  // Opaque: the attract screen is its own world, not a veil over a frozen cave.
+  g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+  if (bustCanvas) g.drawImage(bustCanvas, 6, (H - BUST_H) >> 1);
+
+  const x = 6 + BUST_W + 12;
+  g.textAlign = 'left'; g.textBaseline = 'top';
+  g.font = '10px ui-monospace,Consolas,monospace'; g.fillStyle = '#fff';
+  g.fillText('CAN YOU ESCAPE', x, H * 0.24);
+  g.fillText("PLATO'S CAVE?", x, H * 0.24 + 14);
+  line(g, x, Math.round(H * 0.62), W - 9, Math.round(H * 0.62), '#5a5a5a');
+
+  g.font = '9px ui-monospace,Consolas,monospace';
+  const best = loadMyBest();
+  if (best) { g.fillStyle = '#6a7080'; g.fillText('BEST ' + best, x, H * 0.68); }
+  // Blink, as an attract screen should. 800 on, 400 off.
+  if (performance.now() % 1200 < 800) {
+    g.fillStyle = '#bebebe';
+    g.fillText('[ PRESS ]', x, H * 0.68 + (best ? 13 : 0));
+  }
 }
 
 function readyCard() {
@@ -931,5 +981,5 @@ document.getElementById('k_reset').addEventListener('click', () => {
 });
 
 if (localStorage.getItem('pc_max')) document.body.classList.add('max');
-fitCanvas(); reset(); fpsT0 = performance.now(); requestAnimationFrame(frame);
+fitCanvas(); reset(); S.state = 'title'; fpsT0 = performance.now(); requestAnimationFrame(frame);
 </script>
