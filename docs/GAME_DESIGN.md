@@ -469,7 +469,7 @@ becomes short-press to cycle, long-press to confirm — workable but worse.
 
 ## 8. Audio
 
-Not yet built, and now the largest gap in the game.
+Built, in `web/index.html`, and mutable on `m`.
 
 **Synthesise, don't sample** — a rule inherited from the handheld, where 8-bit
 11 kHz mono cost ~11 KB/second against a flash budget, and worth keeping in the
@@ -478,8 +478,62 @@ file that is deliberately one file, and procedural tones cost nothing and sound
 like the dither looks. Web Audio also makes the *Republic* 399a constraint below
 worth honouring properly rather than approximating with square waves.
 
-Obvious candidates: a thrust tone that pitches with velocity, a stage-transition
-chime that shifts with the palette, a death sound, and a title jingle.
+### Two harmoniai, and which is which
+
+*Republic* 398e–399c: Socrates throws out the lamenting harmoniai and the slack
+ones and keeps exactly two — one for a man in violent action, one for a man
+acting peacefully, **by persuasion**. Glaucon names them the Dorian and the
+Phrygian.
+
+That maps onto this game without being forced:
+
+| | | |
+| --- | --- | --- |
+| **Ascent** | **Dorian** | the forced climb — violent action |
+| **Return** | **Phrygian** | going back down to persuade the people still chained |
+
+The second is the better half of the fit. The returning prisoner's whole task in
+516e–517a *is* persuasion, and it is what gets him laughed at and threatened.
+Phrygian is Plato's mode for exactly that job.
+
+⚠ **The modern modes of those names are not the ancient ones.** As the later
+theorists transmit the octave species, ancient Dorian is the modern *Phrygian*
+and ancient Phrygian is the modern *Dorian* — they are swapped. The code uses
+the ancient forms, so calling the ascent Dorian is a claim about Plato's word
+rather than about a jazz chart. The reconstruction is not beyond dispute; this
+follows the octave-species account rather than pretending the question is
+settled.
+
+```
+DORIAN   = [0, 1, 3, 5, 7, 8, 10]   // ancient: the E octave species
+PHRYGIAN = [0, 2, 3, 5, 7, 9, 10]   // ancient: the D octave species
+```
+
+**One region per scale degree.** Seven ascent regions against seven degrees, so
+the climb is exactly one octave of the Dorian species — a region boundary is a
+step up the scale, and the return walks the Phrygian back down. The palette and
+the pitch move together because they are indexed by the same number.
+
+### The cues
+
+| Cue | What it is |
+| --- | --- |
+| `thrust` | a low drone while held, a twelfth below the region's root. Quiet on purpose: it runs for most of a five-minute run, so it has to sit under everything or become the only thing you hear. |
+| `region` | a triad off the region's own root — the palette shifts, so does this |
+| `turn` | ΠΕΡΙΑΓΩΓΗ: the top of the Dorian, then the Phrygian answering underneath. The only moment both modes are heard, which is the point |
+| `pass` | a blip on overtaking a name |
+| `death` | falling and dull; the returning death drops a twelfth rather than an octave |
+| `win` | ΚΑΤΕΒΗΝ, resolving on the Phrygian tonic |
+
+Every envelope ramps rather than switching. At this volume a square edge on a
+gain node is a click, and the click is louder than the note.
+
+**Audio starts on the title screen's press.** Browsers refuse to start it without
+a gesture, and that is the first one — which is also where an arcade cabinet
+would come alive.
+
+Muting is persisted, on `m` or the ♫ button, and it stops the drone rather than
+turning it down.
 
 ---
 
@@ -673,7 +727,7 @@ Everything below is **playable**, in `web/index.html`, unless said otherwise.
 | Gravity/thrust feel | **tuned by playtest**, baked back to `cave.py` |
 | `VIEW_CLOSE` | still untested — four minutes into a run nobody finishes |
 | Thirteen regions baked to `constants.h` | done, structurally verified |
-| Audio | **designed (§8), not built** — the largest remaining gap |
+| Audio | played — two harmoniai, six cues, mute persisted |
 | Handheld firmware | deferred; zero lines written |
 
 ### Gotcha worth remembering

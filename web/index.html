@@ -75,13 +75,16 @@
      a phone does not, and on a phone it is most of the screen. Hiding it is the
      part that works everywhere; the Fullscreen API below is a bonus where it
      exists. */
-  #maxbtn{position:fixed;top:calc(env(safe-area-inset-top) + 6px);
-    right:calc(env(safe-area-inset-right) + 6px);z-index:10;
-    width:30px;height:30px;padding:0;line-height:1;
+  #maxbtn,#sndbtn{position:fixed;top:calc(env(safe-area-inset-top) + 6px);
+    z-index:10;width:30px;height:30px;padding:0;line-height:1;
     font:inherit;font-size:14px;color:var(--dim);
     background:#0d0f15c0;border:1px solid var(--rule);border-radius:4px;
     cursor:pointer;opacity:.55}
-  #maxbtn:hover,#maxbtn:focus-visible{opacity:1;color:var(--text)}
+  #maxbtn{right:calc(env(safe-area-inset-right) + 6px)}
+  #sndbtn{right:calc(env(safe-area-inset-right) + 42px)}
+  #maxbtn:hover,#maxbtn:focus-visible,
+  #sndbtn:hover,#sndbtn:focus-visible{opacity:1;color:var(--text)}
+  #sndbtn.off{color:#3a3f4a}
   /* The rig is opt-in. It was the default when this page existed to find four
      numbers; the numbers are found, and four sliders and thirteen jump pips are
      most of a phone screen. */
@@ -116,6 +119,7 @@
 </header>
 <canvas id=c></canvas>
 <button id=maxbtn type=button title="play mode (f)" aria-label="toggle play mode">&#9974;</button>
+<button id=sndbtn type=button title="sound (m)" aria-label="toggle sound">&#9835;</button>
 <div id=hud></div>
 <button id=rigbtn type=button>tuning</button>
 <div id=tune></div>
@@ -356,7 +360,8 @@ function reset(seed) {
         py: H / 2, vy: 0, dist: 0, acc: 0, trail: [],
         banner: null, flashT: 0, capt: null, captT: 0, t: 0, state: 'ready',
         best: loadMyBest(), targets: buildTargets(), armed: false,
-        deadT: 0, hitY: H / 2 };
+        deadT: 0, hitY: H / 2, wasHeld: false };
+  if (typeof SND !== 'undefined') SND.thrust(false, 0);
 }
 // ΟΙ ΛΥΘΕΝΤΕΣ -- "those who were released". Seeded with the Neoplatonists above
 // the Republic's cast, because the cast were never released: they sat in a house
@@ -436,6 +441,7 @@ function commitScore(ini, dist) {
 let held = false, pressAt = 0;
 function press() {
   if (!S) { reset(); return; }
+  SND.wake();                 // browsers require a gesture; this is the first one
   pressAt = performance.now();
   if (S.state === 'title') { S.state = 'ready'; return; }
   if (S.state === 'ready') { S.state = 'play'; held = true; return; }
@@ -473,6 +479,14 @@ function release() {
 // controls unusable from the keyboard, which is also the accessible path.
 const inControl = e => e.target instanceof Element &&
                        e.target.closest('#tune') !== null;
+function syncSnd() {
+  const b = document.getElementById('sndbtn');
+  b.classList.toggle('off', SND.isMuted());
+  b.title = SND.isMuted() ? 'sound off (m)' : 'sound on (m)';
+}
+document.getElementById('sndbtn').addEventListener('click', e => {
+  SND.wake(); SND.setMuted(!SND.isMuted()); syncSnd(); e.currentTarget.blur();
+});
 document.getElementById('rigbtn').addEventListener('click', e => {
   setRig(!document.body.classList.contains('rig'));
   e.currentTarget.blur();
@@ -484,6 +498,7 @@ document.getElementById('maxbtn').addEventListener('click', e => {
 addEventListener('keydown', e => {
   if (inControl(e)) return;
   if (e.code === 'KeyF') { e.preventDefault(); setMax(!document.body.classList.contains('max')); return; }
+  if (e.code === 'KeyM') { e.preventDefault(); SND.wake(); SND.setMuted(!SND.isMuted()); syncSnd(); return; }
   if (e.code === 'Escape' && document.body.classList.contains('max')) { setMax(false); return; }
   if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); press(); }
 });
@@ -820,6 +835,149 @@ function endCard(reg) {
              W / 2, 112);
 }
 
+
+// ------------------------------------------------------------------- audio
+// Republic 398e-399c: Socrates throws out the lamenting harmoniai and the slack
+// ones, and keeps exactly two -- one for a man in violent action, one for a man
+// acting peacefully, by persuasion. Glaucon names them Dorian and Phrygian.
+//
+// So: the ascent is the forced climb and takes the Dorian. The return is the
+// freed prisoner going back down to persuade the people still chained, which is
+// precisely Phrygian's remit, and it takes that.
+//
+// The trap: the modern church modes called Dorian and Phrygian are not the
+// ancient harmoniai of those names -- as the later theorists transmit the octave
+// species, ancient Dorian is the modern Phrygian and ancient Phrygian is the
+// modern Dorian. They are swapped. These are the ancient ones, so naming the
+// ascent "Dorian" is a claim about Plato's word and not about a jazz chart.
+// (The reconstruction is not beyond dispute; this follows the octave-species
+// account rather than pretending the question is settled.)
+const DORIAN   = [0, 1, 3, 5, 7, 8, 10];   // ancient: E-octave species
+const PHRYGIAN = [0, 2, 3, 5, 7, 9, 10];   // ancient: D-octave species
+const SND_BASE = 45;                        // MIDI A2, low enough to stay under the game
+
+const SND = (() => {
+  let ctx = null, master = null;
+  let muted = false;
+  try { muted = !!localStorage.getItem('pc_mute'); } catch (e) { /* private mode */ }
+  let thrusting = null;                     // the held-thrust voice, if any
+  const recent = [];                        // what fired, for the tests
+
+  const Ctor = typeof AudioContext !== 'undefined' ? AudioContext
+             : typeof webkitAudioContext !== 'undefined' ? webkitAudioContext : null;
+
+  // Browsers refuse to start audio without a gesture, so the context is built on
+  // the first press -- which is the title screen's press, exactly where an
+  // arcade cabinet would come alive anyway.
+  function wake() {
+    if (!Ctor || ctx) return;
+    ctx = new Ctor();
+    master = ctx.createGain();
+    master.gain.value = muted ? 0 : 0.22;
+    master.connect(ctx.destination);
+  }
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+  const deg = (mode, n) => {
+    // Degrees past the seventh keep climbing, an octave at a time.
+    const oct = Math.floor(n / mode.length), i = n - oct * mode.length;
+    return mode[i] + 12 * oct;
+  };
+
+  function tone(o) {
+    if (!ctx || muted) return null;
+    const t0 = ctx.currentTime + (o.at || 0);
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = o.type || 'triangle';
+    osc.frequency.setValueAtTime(hz(o.note), t0);
+    if (o.slide !== undefined) osc.frequency.exponentialRampToValueAtTime(hz(o.slide), t0 + o.dur);
+    // Never a bare start/stop: a square edge on the envelope is a click, and at
+    // this volume the click is louder than the note.
+    const peak = (o.gain === undefined ? 0.5 : o.gain);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(peak, t0 + (o.attack || 0.012));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
+    osc.connect(g); g.connect(master);
+    osc.start(t0); osc.stop(t0 + o.dur + 0.02);
+    return osc;
+  }
+
+  // One region per scale degree, so the seven-region ascent is exactly one
+  // octave of the Dorian species and the return walks the Phrygian back down.
+  function rootFor(i) {
+    return i < ASCENT_COUNT
+      ? SND_BASE + deg(DORIAN, i)
+      : SND_BASE + deg(PHRYGIAN, REGIONS.length - 1 - i);
+  }
+
+  function cue(name, arg) {
+    recent.push(name); if (recent.length > 24) recent.shift();
+    if (!ctx || muted) return;
+    const mode = (arg | 0) < ASCENT_COUNT ? DORIAN : PHRYGIAN;
+    const root = rootFor(arg | 0);
+    switch (name) {
+      case 'region':
+        // A triad off the region's own root: the palette shifts, so does this.
+        [0, 2, 4].forEach((d, k) =>
+          tone({ note: root + deg(mode, d), dur: 0.5, at: k * 0.07, gain: 0.35 }));
+        break;
+      case 'turn':
+        // The hinge, and audibly so: the top of the Dorian, then the Phrygian
+        // answering underneath it. The one moment both modes are heard.
+        [6, 4, 2].forEach((d, k) =>
+          tone({ note: SND_BASE + deg(DORIAN, d), dur: 0.4, at: k * 0.10, gain: 0.4 }));
+        [0, 2, 4].forEach((d, k) =>
+          tone({ note: SND_BASE + deg(PHRYGIAN, d), dur: 0.9, at: 0.34 + k * 0.10, gain: 0.4 }));
+        break;
+      case 'pass':
+        tone({ note: root + 12, dur: 0.14, type: 'square', gain: 0.12 });
+        break;
+      case 'death':
+        // Falling, and dull. The returning death drops further: its word is
+        // TYPHLOS and the screen is going dark as it plays.
+        tone({ note: root, slide: root - (arg >= ASCENT_COUNT ? 19 : 12),
+               dur: 0.9, type: 'sawtooth', gain: 0.3 });
+        break;
+      case 'win':
+        [0, 2, 4, 7].forEach((d, k) =>
+          tone({ note: SND_BASE + deg(PHRYGIAN, d), dur: 1.6, at: k * 0.13, gain: 0.32 }));
+        break;
+    }
+  }
+
+  function thrust(on, region) {
+    recent.push(on ? 'thrust+' : 'thrust-');
+    if (recent.length > 24) recent.shift();
+    if (!ctx || muted) { thrusting = null; return; }
+    if (on && !thrusting) {
+      // Quiet and low: this runs for most of a five-minute run, so it has to sit
+      // under everything else or it becomes the only thing you hear.
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = hz(rootFor(region | 0) - 12);
+      g.gain.setValueAtTime(0.0001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.09, ctx.currentTime + 0.05);
+      osc.connect(g); g.connect(master); osc.start();
+      thrusting = { osc, g };
+    } else if (!on && thrusting) {
+      const { osc, g } = thrusting; thrusting = null;
+      g.gain.cancelScheduledValues(ctx.currentTime);
+      g.gain.setValueAtTime(Math.max(g.gain.value, 0.0001), ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
+      osc.stop(ctx.currentTime + 0.1);
+    }
+  }
+
+  function setMuted(on) {
+    muted = on;
+    try { localStorage.setItem('pc_mute', on ? '1' : ''); } catch (e) { /* private mode */ }
+    if (on) thrust(false, 0);
+    if (master) master.gain.value = on ? 0 : 0.22;
+  }
+  return { wake, cue, thrust, setMuted, isMuted: () => muted, recent,
+           available: () => !!Ctor };
+})();
+
 // ---------------------------------------------------------------- main loop
 let last = performance.now();
 function frame(now) {
@@ -846,9 +1004,9 @@ function frame(now) {
     while (S.acc >= 1) { S.cave.step(S.dist); S.acc -= 1; cols++; }
 
     if (before < DESCENT_START && S.dist >= DESCENT_START) {
-      S.banner = 'ΠΕΡΙΑΓΩΓΗ'; S.flashT = 1.6;
+      S.banner = 'ΠΕΡΙΑΓΩΓΗ'; S.flashT = 1.6; SND.cue('turn', regionIndex(S.dist));
     } else if (regionAt(before) !== regionAt(S.dist)) {
-      S.banner = null; S.flashT = 0.5;
+      S.banner = null; S.flashT = 0.5; SND.cue('region', regionIndex(S.dist));
     } else if (S.flashT > 0) {
       S.flashT -= dt; if (S.flashT <= 0) S.banner = null;
     }
@@ -858,8 +1016,11 @@ function frame(now) {
     // starting at 31300 would announce eight overtakes you did not make.
     let passed = null;
     for (const m of S.targets) if (!m.done && S.dist >= m.at) { m.done = true; passed = m; }
-    if (passed && !S.practice) { S.capt = 'ΠΑΡΗΛΘΕΣ'; S.captT = 1.0; }
+    if (passed && !S.practice) { S.capt = 'ΠΑΡΗΛΘΕΣ'; S.captT = 1.0;
+                                 SND.cue('pass', regionIndex(S.dist)); }
     else if (S.captT > 0) S.captT -= dt;
+
+    if (held !== S.wasHeld) { SND.thrust(held, regionIndex(S.dist)); S.wasHeld = held; }
 
     S.trail = S.trail.map(p => [p[0] - cols, p[1], p[2]]).filter(p => p[0] >= 0);
     S.trail.push([PLAYER_X, S.py | 0, held]);
@@ -875,6 +1036,8 @@ function frame(now) {
       // that WALL_MARGIN keeps ~8 px inside the panel -- so the true point is
       // essentially always visible, and clipping beats lying when it is not.
       S.hitY = S.py; S.deadT = 0;
+      SND.thrust(false, 0); S.wasHeld = false;
+      SND.cue(over ? 'death' : 'win', regionIndex(S.dist));
       // Every run counts toward your own best, whether or not it makes the
       // table -- otherwise early progress is invisible until you beat ΘΡΑ.
       // Except practice runs, which started partway up and did not earn it.
@@ -997,6 +1160,7 @@ function syncKnobs() {
     o.classList.toggle('changed', TUNE[key] !== BAKED[key]);
   }
 }
+syncSnd();
 const pinnedTune = applyHashTune();
 setRig(pinnedTune || !!localStorage.getItem('pc_rig'));
 syncKnobs();
