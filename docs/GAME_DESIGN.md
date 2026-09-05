@@ -659,9 +659,9 @@ restoring a generator that outran the player.
 | Centre drift | uniform ±0.42, clamped ±2.6, damped ×0.94 | per column |
 | Wall margin | `gap/2 + H × 0.06` | |
 | Player x | `W × 0.17` | |
-| `GRAVITY` | `+7.8 H` px/s² | **guess** |
-| `THRUST` | `−9.6 H` px/s² | **guess** — replaces gravity, doesn't add |
-| `VY_MAX` | `±1.26 H` px/s | **guess** |
+| `GRAVITY` | `+5.0 H` px/s² | **playtested** |
+| `THRUST` | `−7.5 H` px/s² | **playtested** — replaces gravity, doesn't add |
+| `VY_MAX` | `±1.00 H` px/s | **playtested** |
 
 `gap_at(dist)` and `speed_at(dist)` are pure functions of distance, so they
 cannot drift with frame rate the way an incremental shrink did.
@@ -670,8 +670,11 @@ The gap bottoms out at 12 000 distance (~170 s), before the sun at ~213 s, so th
 last ~40 s is a plateau at minimum gap and maximum speed. That is the endurance
 tail, and it is intentional.
 
-**The three physics constants remain unvalidated.** They were converted from the
-original per-frame guesses and have still never been driven by a human thumb.
+**The three physics constants were found by playtest** on the web build's live
+sliders and baked back into `cave.py` — lighter than the original 7.8 / −9.6 /
+1.26 guesses in all three, and with a higher thrust-to-gravity ratio (1.50
+against 1.23), so there is more authority to arrest a fall. `VIEW_CLOSE` is now
+the one constant still unvalidated, because it only bites on the return.
 
 ---
 
@@ -720,7 +723,8 @@ original per-frame guesses and have still never been driven by a human thumb.
 ΔΕΣΜΩΤΗΣ ascending and ΤΥΦΛΟΣ returning (§3a). **Win screen** — ΚΑΤΕΒΗΝ, the
 Republic's first word.*
 
-*Still guesses: the three physics constants, and now `VIEW_CLOSE`.*
+*Still a guess: `VIEW_CLOSE`. The three physics constants were found by playtest
+(§9).*
 
 ---
 
