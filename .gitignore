@@ -10,7 +10,10 @@ mesh/
 
 # Source photographs and the renders derived from them. Large, and the baked
 # assets in firmware/ are what the build actually consumes.
-image/
+# The source photograph is committed: at 1.1 MB it is small against the value of
+# bake_assets and mockups running anywhere, which is what keeping it out cost.
+image/*
+!image/plato.png
 
 # Python
 __pycache__/

@@ -28,26 +28,26 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PHOTO = ROOT / "image" / "plato.png"
-
-# The committed PNGs and the GIF were rendered with Consolas. The tools now fall
-# back to another monospace face elsewhere so they *run* on any machine -- but a
-# different face moves pixels, and a pixel difference from the font is not
-# staleness. Where the canonical font is absent, the tools that draw text are
-# skipped rather than diffed.
+# image/plato.png is committed now, so nothing here is gated on it any more.
+# The one remaining gate is the font: the committed PNGs, the GIF and the baked
+# Greek labels are all rendered with the canonical face, and a different face
+# moves pixels. A pixel difference caused by the font is not staleness, so where
+# the canonical font is absent the tools that draw text are skipped, not diffed.
 sys.path.insert(0, str(ROOT / "tools"))
 import cave                                          # noqa: E402
 CANONICAL_FONT = Path(cave.CANONICAL_FONT).exists()
 
 # Order matters: bake_assets writes bust.h, which bake_web reads.
-FONT_GATE = "the canonical font (Consolas)"
+FONT_GATE = "the canonical font (DejaVu Sans Mono)"
 
 # (tool, what must be present for its output to be comparable)
 TOOLS = [
-    ("bake_assets.py", PHOTO),
+    # labels.h is Greek text rendered to 1-bit bitmaps, so this moves with the
+    # font even though the bust beside it does not.
+    ("bake_assets.py", FONT_GATE),
     ("bake_constants.py", None),          # pure text from cave.py, font-free
     ("bake_web.py", None),                # ditto, plus base64 out of bust.h
-    ("mockups.py", PHOTO),
+    ("mockups.py", FONT_GATE),
     ("stage_sheet.py", FONT_GATE),
     ("model_descent.py", FONT_GATE),
     ("readme_gif.py", FONT_GATE),
@@ -91,11 +91,7 @@ def main():
 
     ran, skipped, failed = [], [], []
     for name, needs in TOOLS:
-        why = None
-        if needs is FONT_GATE and not CANONICAL_FONT:
-            why = FONT_GATE
-        elif isinstance(needs, Path) and not needs.exists():
-            why = str(needs.relative_to(ROOT))
+        why = FONT_GATE if (needs is FONT_GATE and not CANONICAL_FONT) else None
         if why:
             skipped.append((name, why))
             print(f"  skip  {name:<20} needs {why}, absent")
@@ -116,7 +112,9 @@ def main():
     # re-renders the bust from the photograph to compare, so it is gated on the
     # photograph too -- without that gate it failed the whole run on a clone
     # that simply does not have the file.
-    if PHOTO.exists() and CANONICAL_FONT:
+    # verify_bake compares the bust, which is a dithered photograph, and
+    # field-counts the region table. Neither involves the font, so it always runs.
+    if True:
         r = subprocess.run([sys.executable, str(ROOT / "tools" / "verify_bake.py")],
                            cwd=ROOT / "tools", capture_output=True, text=True,
                            encoding="utf-8", errors="replace")
@@ -124,10 +122,7 @@ def main():
         if r.returncode != 0:
             failed.append("verify_bake.py")
             print("        " + (r.stdout.strip().splitlines() or ["(no output)"])[-1])
-    else:
-        why = str(PHOTO.relative_to(ROOT)) if not PHOTO.exists() else FONT_GATE
-        skipped.append(("verify_bake.py", why))
-        print(f"  skip  {'verify_bake.py':<20} needs {why}, absent")
+
 
     stale = sorted(dirty() - before)
     print()

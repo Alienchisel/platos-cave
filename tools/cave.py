@@ -32,26 +32,32 @@ def _find_font():
     seven simply raised OSError -- in a public repository anyone else could
     clone. CI found it the first time it ran.
 
-    Consolas is *canonical*: the committed PNGs and the GIF were rendered with
-    it, and a different face moves pixels. So the fallbacks make the tools run
-    elsewhere, they do not make the output comparable, and regen.py checks
+    One face is *canonical* -- the committed PNGs and the GIF are rendered with
+    it, and a different face moves pixels. The fallbacks make the tools run
+    anywhere; they do not make the output comparable. regen.py checks
     CANONICAL_FONT before it treats a pixel difference as staleness.
     """
     from pathlib import Path as _P
-    for cand in ("C:/Windows/Fonts/consola.ttf",
-                 "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+    for cand in (CANONICAL_FONT,
                  "/usr/share/fonts/TTF/DejaVuSansMono.ttf",
+                 "C:/Windows/Fonts/consola.ttf",
                  "/System/Library/Fonts/Menlo.ttc",
                  "/Library/Fonts/Menlo.ttc"):
         if _P(cand).exists():
             return cand
     raise SystemExit(
-        "no monospace font found. Install DejaVu Sans Mono, or point FONT "
+        "no monospace font found. Install DejaVu Sans Mono (the canonical "
+        "face), or point FONT "
         "in tools/cave.py at any .ttf. Note that the committed images were "
-        "rendered with Consolas; another face will render them differently.")
+        "rendered with DejaVu; another face will render them differently.")
 
 
-CANONICAL_FONT = "C:/Windows/Fonts/consola.ttf"
+# DejaVu Sans Mono, not Consolas. Consolas is Microsoft's, ships only with
+# Windows, and cannot be put on a Linux box or a CI runner -- so while it was
+# canonical, the tools that draw text could only be *checked* on one machine.
+# DejaVu is on every Linux distribution and on the runners, which is what lets
+# the regeneration guard cover the image tools at all.
+CANONICAL_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
 FONT = _find_font()
 
 # Set by configure(). Kept as module globals so the whole file can be retargeted
