@@ -231,7 +231,7 @@ def main() -> None:
         phase = "ascent" if i < len(cave.STAGES) else "return"
         print(f"  {i:>2}  {name:<8} {phase}  from {start:>6}  "
               f"light {round(light * 255):>3}/255")
-    print(f"\nwrote {args.out}\\constants.h")
+    print(f"\nwrote {args.out / 'constants.h'}")
 
 
 if __name__ == "__main__":

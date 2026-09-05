@@ -190,7 +190,7 @@ def main() -> None:
         bake_bust(args.image, args.bust_size), encoding="utf-8")
 
     total = sum((args.out / f).stat().st_size for f in ("labels.h", "bust.h"))
-    print(f"\nwrote {args.out}\\labels.h and bust.h  ({total // 1024} KB of source)")
+    print(f"\nwrote {args.out / 'labels.h'} and bust.h  ({total // 1024} KB of source)")
 
 
 if __name__ == "__main__":
