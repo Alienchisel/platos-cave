@@ -77,6 +77,10 @@ def main() -> None:
     ap.add_argument("--out", type=Path,
                     default=Path(__file__).parent.parent / "preview")
     args = ap.parse_args()
+    # Gitignored, so absent on a fresh clone -- and this wrote the label contact
+    # sheet into it without creating it. Same fault as mockups.py, invisible on
+    # any machine that had already run something else first.
+    args.out.mkdir(parents=True, exist_ok=True)
 
     bust_h = (args.assets / "bust.h").read_text(encoding="utf-8")
     size = int(re.search(r"#define BUST_W (\d+)", bust_h).group(1))

@@ -257,7 +257,12 @@ def main():
         x, y = 8 + (i % 2) * (cw + 8), 8 + (i // 2) * (ch + 26)
         d.text((x, y), name.upper(), font=f, fill=(255, 200, 80))
         sheet.paste(img.resize((cw, ch), Image.NEAREST), (x, y + 18))
-    sheet.save(args.out.parent.parent / "preview" / "screens_sheet.png")
+    # preview/ is gitignored, so on a fresh clone it does not exist. This wrote
+    # into it without creating it, which passed for months on the one machine
+    # that happened to have the directory already.
+    sheet_dir = args.out.parent.parent / "preview"
+    sheet_dir.mkdir(parents=True, exist_ok=True)
+    sheet.save(sheet_dir / "screens_sheet.png")
     print(f"\nwrote {len(made)} screens -> {args.out}")
 
 
