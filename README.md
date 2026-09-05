@@ -85,7 +85,14 @@ stats card follows.
 ```bash
 python tools/bake_web.py     # re-export cave.py's constants into the page
 node tools/test_web.js       # check the web build against the Python model
+python tools/regen.py --check   # are the committed artifacts still current?
 ```
+
+`regen.py` reruns every generator and asks git whether anything moved. The
+repository commits derived things — C headers, the reference screens, the
+difficulty curves, the GIF above — and twice they came to describe a game that
+no longer existed. Generation is byte-reproducible, so this catches it. CI runs
+it on every push.
 
 `test_web.js` runs the game headlessly and compares all twelve region transitions
 against `cave.py`, at 30 / 50 / 72 / 144 fps. Generated constants keep the
@@ -283,8 +290,15 @@ and its attribution travels with it.
 
 <https://github.com/Alienchisel/platos-cave>
 
-`image/`, `mesh/` and `preview/` are excluded: ~26 MB of source images and
-regenerable output, against ~450 KB of actual source.
+**Development happens on a Linux box.** `image/plato.png` is committed and the
+canonical font is DejaVu Sans Mono, so every tool runs — and is *checked* — on
+any Linux machine and on CI. Consolas held that role until the work moved, and
+while it did, five of the eight tools could only be verified on one computer.
+
+`mesh/` and `preview/` are still excluded: ~32 MB of a 3D scan the archived
+point-cloud tools need, plus regenerable scratch output. `mesh/plato.glb` lives
+only on the machine that downloaded it, so those archived tools cannot run on a
+fresh clone. Their output is committed and nothing else depends on them.
 
 `firmware/plato_tqt/` keeps its name because it holds the archived T-QT sketch,
 named for the board it targeted. It was never compiled.

@@ -23,16 +23,9 @@ jobs:
           python-version: '3.12'
       - run: pip install --quiet numpy pillow
 
-      # Two things are absent on a runner and both are gates. image/plato.png,
-      # the source photograph, is not in the repository. And Consolas is not on
-      # Linux -- the committed PNGs and the GIF were rendered with it, so a
-      # different face moves pixels and a pixel difference from the font is not
-      # staleness.
-      #
-      # So CI checks the two font-free generators, which are the
-      # correctness-critical ones: constants.h and the page's generated block
-      # must match cave.py. The image tools are named in regen.py's summary as
-      # NOT CHECKED. The full check runs on the machine the artifacts are
-      # actually generated on.
+      # Full coverage: image/plato.png is committed and the canonical font is
+      # DejaVu Sans Mono, which the runner has. Both were once absent here --
+      # the photograph by .gitignore, Consolas because it is Microsoft's -- and
+      # this checked two of eight tools while saying so.
       - name: Regenerate and diff
         run: python tools/regen.py --check
