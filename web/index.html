@@ -1061,6 +1061,12 @@ function frame(now) {
 
 let fpsN = 0, fpsShown = 0, fpsT0 = 0;
 const hudEl = document.getElementById('hud');
+// Initials come from a fixed Greek alphabet, but they reach here via
+// localStorage (pc_scores), which nothing but this page should ever write.
+// Escape before the innerHTML below anyway: a tampered store must not be able
+// to turn a score row into markup.
+const esc = s => String(s).replace(/[&<>"']/g,
+  c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function hud() {
   if (++fpsN > 30) {
     fpsShown = Math.round(fpsN / (performance.now() - fpsT0) * 1000);
@@ -1081,7 +1087,7 @@ function hud() {
     `<span class=live>${i >= ASCENT_COUNT ? '↓' : ''}${r.name} <b>${i + 1}</b>/${REGIONS.length}</span>` +
     `<span>${mm}:${String(ss).padStart(2, '0')}</span>` +
     `<span>your best <b>${loadMyBest() || '—'}</b></span>` +
-    (nextUp ? `<span>next <b>${nextUp.ini}</b> ${Math.round(nextUp.dist)}</span>` : '') +
+    (nextUp ? `<span>next <b>${esc(nextUp.ini)}</b> ${Math.round(nextUp.dist)}</span>` : '') +
     `<span>${seedCell}</span>` +
     `<span>${fpsShown} fps</span>`;
 }
