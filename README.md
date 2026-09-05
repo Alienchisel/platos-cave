@@ -82,6 +82,11 @@ rivals single, with the next one named in the corner. And **the death word lands
 over the frozen frame you died on**, dimmed, with the impact ringed, before the
 stats card follows.
 
+Sound follows *Republic* 398e–399c, which keeps exactly two harmoniai: the
+ascent takes the Dorian, the return the Phrygian — the mode Plato assigns to
+persuasion, which is the returning prisoner's whole task. The ancient octave
+species, not the modern modes of those names, which are swapped. **m** mutes.
+
 ```bash
 python tools/bake_web.py     # re-export cave.py's constants into the page
 node tools/test_web.js       # check the web build against the Python model
@@ -134,7 +139,7 @@ the same build reaches region 4 of 13.
 | Pacing | frame-rate independent, verified 30–144 fps |
 | Physics feel | tuned by playtest |
 | `VIEW_CLOSE` | **never tested** — it only bites four minutes in |
-| Audio | not started |
+| Audio | two harmoniai, six cues, mute on **m** |
 | Handheld port | **deferred** — see below |
 
 ### The handheld, and why it is deferred
