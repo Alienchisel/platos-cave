@@ -64,6 +64,12 @@ and [the difficulty levers across a full run](docs/images/descent_curves.png).
 network. It is what the link above serves, deployed straight from `web/` rather
 than copied, because a second copy is a second thing to drift.
 
+It also installs as an app, full screen, from any HTTPS copy (the Pages site
+included): `web/manifest.webmanifest`, with the title bust as its icon, cut from
+the page's own `BUST_B64` bits and enlarged by whole numbers only (1×, 3×, 4×),
+because resampling a dither destroys it. Every path in it is relative, so it works
+under the Pages subpath as well as at a site root.
+
 It began as a rig for finding four numbers with a thumb, and the rig is still
 there behind the **tuning** toggle: live sliders for gravity, thrust, vy-max and
 `VIEW_CLOSE`, so "it feels floaty" arrives attached to the number that causes it.
